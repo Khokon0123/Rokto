@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+/* Calm, clinical-but-warm: light gray page, white surfaces, ONE deep-red accent.
+   Light only on purpose: reads best in bright daylight and on battery-saver screens. */
+@theme {
+  --color-page: #f3f4f6;
+  --color-surface: #ffffff;
+  --color-ink: #111827;
+  --color-muted: #4b5563;
+  --color-line: #d1d5db;
+  --color-accent: #b91c1c;
+  --color-accent-dark: #991b1b;
+  --color-accent-deep: #7f1d1d;
+  --color-accent-soft: #fef2f2;
+  /* soft raised look for cards; a stronger one for the search card that sits over the hero band */
+  --shadow-card: 0 1px 2px rgb(17 24 39 / 0.06), 0 8px 20px -6px rgb(17 24 39 / 0.12);
+  --shadow-lift: 0 2px 4px rgb(17 24 39 / 0.06), 0 16px 36px -10px rgb(127 29 29 / 0.35);
+  --font-sans: var(--font-geist-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-page);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
