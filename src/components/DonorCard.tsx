@@ -1,13 +1,14 @@
 import { t, fmt } from "@/i18n";
 import { getArea } from "@/lib/areas";
 import { formatDate } from "@/lib/donation";
+import { formatDistanceKm } from "@/lib/geo";
 import { formatLocalPhone } from "@/lib/phone";
 import type { SearchResult } from "@/lib/search";
 import BloodBadge from "./BloodBadge";
 import { btnPrimary, btnSecondary, cardClass } from "./styles";
 
 export default function DonorCard({ result }: { result: SearchResult }) {
-  const { donor, coolingDown } = result;
+  const { donor, coolingDown, distanceKm } = result;
   const areaLabel = getArea(donor.area)?.label ?? donor.area;
 
   return (
@@ -16,12 +17,30 @@ export default function DonorCard({ result }: { result: SearchResult }) {
         <BloodBadge group={donor.bloodGroup} />
         <div className="min-w-0">
           <p className="truncate text-lg font-bold text-ink">{donor.name}</p>
-          <p className="text-base text-ink">{areaLabel}</p>
+          <p className="text-base text-ink">
+            {areaLabel}
+            {typeof distanceKm === "number" && distanceKm !== Infinity && (
+              <span className="text-muted">
+                {" "}
+                {"·"} {fmt(t.card.distanceAway, { distance: formatDistanceKm(distanceKm) })}
+              </span>
+            )}
+          </p>
           <p className="text-sm text-muted">
             {donor.lastDonated
               ? fmt(t.card.lastDonated, { date: formatDate(donor.lastDonated) })
               : t.card.lastDonatedNone}
           </p>
+          {donor.location && (
+            <a
+              href={`https://www.google.com/maps?q=${donor.location.lat},${donor.location.lng}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-semibold text-accent underline"
+            >
+              {t.card.viewLocation} {"↗"}
+            </a>
+          )}
         </div>
       </div>
       {coolingDown && (

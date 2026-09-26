@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import AreaAutocomplete from "@/components/AreaAutocomplete";
 import BloodBadge from "@/components/BloodBadge";
+import LocationField from "@/components/LocationField";
 import OtpVerification from "@/components/OtpVerification";
 import Switch from "@/components/Switch";
 import { btnPrimary, btnSecondary, cardClass, inputClass, labelClass } from "@/components/styles";
@@ -15,7 +16,7 @@ import { todayIso } from "@/lib/validation";
 
 type Load = "loading" | "invalid" | "ready" | "deleted";
 type Save = "idle" | "saving" | "saved";
-type Patch = Partial<Pick<EditableProfile, "available" | "lastDonated" | "area">>;
+type Patch = Partial<Pick<EditableProfile, "available" | "lastDonated" | "area" | "location">>;
 
 export default function EditClient({ token }: { token: string }) {
   const [load, setLoad] = useState<Load>("loading");
@@ -189,6 +190,12 @@ export default function EditClient({ token }: { token: string }) {
         }}
         label={t.edit.area}
         required
+      />
+
+      <LocationField
+        value={profile.location}
+        onChange={(location) => void saveChange({ location })}
+        copy={t.edit.location}
       />
 
       <div>

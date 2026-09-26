@@ -2,6 +2,7 @@ import "server-only";
 import { FieldValue, Timestamp, type DocumentData, type DocumentReference } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
 import type { BloodGroup } from "@/lib/bloodGroups";
+import { fuzzGeoPoint, type GeoPoint } from "@/lib/geo";
 import type { EditableProfile } from "@/lib/types";
 import { generateEditToken, hashToken, TOKEN_PATTERN } from "./token";
 
@@ -16,6 +17,8 @@ export interface DonorFields {
   area: string;
   available: boolean;
   lastDonated: Date | null;
+  /** Already shape/bounds-validated by the caller; fuzzed here, right before it's written. */
+  location: GeoPoint | null;
 }
 
 const ts = (d: Date | null) => (d ? Timestamp.fromDate(d) : null);
@@ -42,6 +45,7 @@ export async function upsertDonorByPhone(
       area: fields.area,
       available: fields.available,
       lastDonated: ts(fields.lastDonated),
+      location: fields.location ? fuzzGeoPoint(fields.location) : null,
       phoneVerified: true,
       consentAt: now,
       updatedAt: now,
@@ -88,6 +92,7 @@ export async function phoneTakenByOther(phone: string, ownId: string): Promise<b
 
 export function toEditable(data: DocumentData): EditableProfile {
   const last = data.lastDonated as Timestamp | null;
+  const location = data.location as GeoPoint | null | undefined;
   return {
     name: data.name,
     phone: data.phone,
@@ -95,6 +100,7 @@ export function toEditable(data: DocumentData): EditableProfile {
     area: data.area,
     available: data.available,
     lastDonated: last ? last.toDate().toISOString().slice(0, 10) : null,
+    location: location ?? null,
   };
 }
 

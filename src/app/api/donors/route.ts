@@ -1,5 +1,6 @@
 import { isValidAreaId } from "@/lib/areas";
 import { isBloodGroup } from "@/lib/bloodGroups";
+import { isValidGeoPoint, type GeoPoint } from "@/lib/geo";
 import { cleanName, parseDateOnly } from "@/lib/validation";
 import { ApiError, handle, json, readJson } from "@/lib/server/http";
 import { verifyPhoneProof } from "@/lib/server/otp";
@@ -24,6 +25,12 @@ export function POST(req: Request) {
       if (!lastDonated) throw new ApiError(400, "date_invalid");
     }
 
+    let location: GeoPoint | null = null;
+    if (body.location !== null && body.location !== undefined) {
+      if (!isValidGeoPoint(body.location)) throw new ApiError(400, "location_invalid");
+      location = body.location;
+    }
+
     const { phone } = verifyPhoneProof(body.proof);
     const result = await upsertDonorByPhone(phone, {
       name,
@@ -31,6 +38,7 @@ export function POST(req: Request) {
       area: body.area,
       available: body.available,
       lastDonated,
+      location,
     });
     return json(result);
   });

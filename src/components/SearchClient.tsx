@@ -4,11 +4,12 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import AreaAutocomplete from "@/components/AreaAutocomplete";
 import DonorCard from "@/components/DonorCard";
-import { btnSecondary, cardClass, inputClass, labelClass } from "@/components/styles";
-import { fmt, t } from "@/i18n";
+import { btnSecondary, cardClass, errorTextClass, inputClass, labelClass } from "@/components/styles";
+import { errorMessage, fmt, t } from "@/i18n";
 import { BLOOD_GROUPS, isBloodGroup, type BloodGroup } from "@/lib/bloodGroups";
 import { isFirebaseConfigured } from "@/lib/firebase/client";
-import { searchDonors, type SearchResult } from "@/lib/search";
+import { getCurrentPosition, type GeoPoint } from "@/lib/geo";
+import { searchDonors, sortByDistance, type SearchResult } from "@/lib/search";
 
 interface Loaded {
   key: string; // which search these results belong to
@@ -23,6 +24,23 @@ export default function SearchClient() {
   const [attempt, setAttempt] = useState(0);
   const configured = isFirebaseConfigured();
   const [loaded, setLoaded] = useState<Loaded | null>(null);
+  const [nearMe, setNearMe] = useState<GeoPoint | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [locateError, setLocateError] = useState<string | null>(null);
+
+  function useMyLocation() {
+    setLocating(true);
+    setLocateError(null);
+    getCurrentPosition()
+      .then((p) => {
+        setNearMe(p);
+        setLocating(false);
+      })
+      .catch((err: Error) => {
+        setLocateError(err.message);
+        setLocating(false);
+      });
+  }
 
   const compatible = Boolean(group) && includeCompatible;
   const key = `${group}|${area ?? ""}|${compatible}|${attempt}`;
@@ -40,6 +58,7 @@ export default function SearchClient() {
 
   // Previous results stay on screen while the next search loads, so the list never flashes empty.
   const results = loaded?.results ?? [];
+  const displayed = nearMe ? sortByDistance(results, nearMe) : results;
   const status: "loading" | "error" | "ready" =
     loaded?.key !== key ? "loading" : loaded.failed ? "error" : "ready";
 
@@ -92,6 +111,24 @@ export default function SearchClient() {
         )}
       </section>
 
+      {configured && results.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          {nearMe ? (
+            <>
+              <span className="font-semibold text-ink">{t.search.nearestFirst}</span>
+              <button type="button" onClick={() => setNearMe(null)} className="font-semibold text-accent underline">
+                {t.search.clearNearest}
+              </button>
+            </>
+          ) : (
+            <button type="button" onClick={useMyLocation} disabled={locating} className={btnSecondary}>
+              {locating ? t.search.locating : t.search.useLocation}
+            </button>
+          )}
+        </div>
+      )}
+      {locateError && <p className={errorTextClass}>{errorMessage(locateError)}</p>}
+
       {!configured ? (
         <p className={cardClass}>{t.search.notConfigured}</p>
       ) : status === "error" ? (
@@ -117,7 +154,7 @@ export default function SearchClient() {
             {results.length === 1 ? t.search.countOne : fmt(t.search.count, { count: results.length })}
           </p>
           <ul className="space-y-3">
-            {results.map((r) => (
+            {displayed.map((r) => (
               <DonorCard key={r.donor.id} result={r} />
             ))}
           </ul>

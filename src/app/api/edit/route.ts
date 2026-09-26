@@ -1,5 +1,6 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { isValidAreaId } from "@/lib/areas";
+import { fuzzGeoPoint, isValidGeoPoint } from "@/lib/geo";
 import { normalizeBdPhone } from "@/lib/phone";
 import { parseDateOnly } from "@/lib/validation";
 import { ApiError, handle, json, readJson } from "@/lib/server/http";
@@ -54,6 +55,16 @@ export function PATCH(req: Request) {
     if ("area" in body) {
       if (!isValidAreaId(body.area)) throw new ApiError(400, "area_invalid");
       updates.area = body.area;
+    }
+    if ("location" in body) {
+      if (body.location === null) {
+        updates.location = null;
+      } else {
+        if (!isValidGeoPoint(body.location)) throw new ApiError(400, "location_invalid");
+        // Re-fuzzed on every save, including an update to an already-fuzzed point - the donor's
+        // device only ever reports its own real position, so this is where privacy is enforced.
+        updates.location = fuzzGeoPoint(body.location);
+      }
     }
 
     if ("phone" in body) {

@@ -1,8 +1,10 @@
 import { collection, getDocs, limit, query, where, Timestamp, type QueryConstraint } from "firebase/firestore";
 import { SEARCH_LIMIT } from "@/config/app";
+import { getArea } from "./areas";
 import { compatibleDonorGroups, isBloodGroup, type BloodGroup } from "./bloodGroups";
 import { isCoolingDown } from "./donation";
 import { clientDb } from "./firebase/client";
+import { haversineKm, isValidGeoPoint, type GeoPoint } from "./geo";
 import type { Donor } from "./types";
 
 export interface SearchParams {
@@ -17,6 +19,8 @@ export interface SearchResult {
   coolingDown: boolean;
   /** Same group as the one searched (false = a compatible group). */
   exact: boolean;
+  /** Set only after sortByDistance() has run. */
+  distanceKm?: number;
 }
 
 /**
@@ -52,6 +56,7 @@ export async function searchDonors(params: SearchParams): Promise<SearchResult[]
         area: String(d.area ?? ""),
         available: true,
         lastDonated,
+        location: isValidGeoPoint(d.location) ? d.location : null,
       },
       coolingDown: isCoolingDown(lastDonated, now),
       exact: !params.bloodGroup || d.bloodGroup === params.bloodGroup,
@@ -70,4 +75,23 @@ export function sortResults(results: SearchResult[]): SearchResult[] {
     if (at !== bt) return at - bt;
     return a.donor.name.localeCompare(b.donor.name);
   });
+}
+
+/**
+ * Re-ranks by distance from `from` (opt-in, e.g. the searcher's own device location - never
+ * sent anywhere, used only in the browser for this one sort). Uses the donor's own exact
+ * location when they shared one, otherwise falls back to their area's approximate center.
+ * Donors who gave blood recently still sort to the bottom, same as the default order.
+ */
+export function sortByDistance(results: SearchResult[], from: GeoPoint): SearchResult[] {
+  const distanceOf = (r: SearchResult): number => {
+    const point = r.donor.location ?? getArea(r.donor.area)?.center ?? null;
+    return point ? haversineKm(from, point) : Number.POSITIVE_INFINITY;
+  };
+  return [...results]
+    .map((r) => ({ ...r, distanceKm: distanceOf(r) }))
+    .sort((a, b) => {
+      if (a.coolingDown !== b.coolingDown) return a.coolingDown ? 1 : -1;
+      return (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity);
+    });
 }

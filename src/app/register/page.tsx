@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import AreaAutocomplete from "@/components/AreaAutocomplete";
 import EditLinkCard from "@/components/EditLinkCard";
+import LocationField from "@/components/LocationField";
 import OtpVerification from "@/components/OtpVerification";
 import Switch from "@/components/Switch";
 import { btnPrimary, btnSecondary, cardClass, errorTextClass, inputClass, labelClass } from "@/components/styles";
@@ -11,6 +12,7 @@ import { errorMessage, t } from "@/i18n";
 import { apiCall } from "@/lib/api";
 import { BLOOD_GROUPS, isBloodGroup } from "@/lib/bloodGroups";
 import { isFirebaseConfigured } from "@/lib/firebase/client";
+import type { GeoPoint } from "@/lib/geo";
 import { normalizeBdPhone } from "@/lib/phone";
 import { cleanName, todayIso } from "@/lib/validation";
 
@@ -25,6 +27,7 @@ export default function RegisterPage() {
   const [phoneInput, setPhoneInput] = useState("");
   const [bloodGroup, setBloodGroup] = useState("");
   const [area, setArea] = useState<string | null>(null);
+  const [location, setLocation] = useState<GeoPoint | null>(null);
   const [available, setAvailable] = useState(true); // default ON
   const [lastDonated, setLastDonated] = useState("");
   const [consent, setConsent] = useState(false);
@@ -57,6 +60,7 @@ export default function RegisterPage() {
       name,
       bloodGroup,
       area,
+      location,
       available,
       lastDonated: lastDonated || null,
       consent,
@@ -178,6 +182,8 @@ export default function RegisterPage() {
         required
         error={errors.area}
       />
+
+      <LocationField value={location} onChange={setLocation} copy={t.register.location} />
 
       <Switch
         checked={available}
