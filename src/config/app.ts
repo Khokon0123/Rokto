@@ -30,3 +30,10 @@ export const OTP_RESEND_COOLDOWN_SECONDS = 30; // min gap between codes to one n
 export const OTP_MAX_PER_PHONE_PER_HOUR = 5;
 export const OTP_MAX_PER_IP_PER_HOUR = 10;
 export const OTP_DEFAULT_DAILY_CAP = 300; // overall texts/day; override with OTP_DAILY_CAP
+
+/** How long an admin login session lasts before needing the password again. */
+export const ADMIN_SESSION_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
+
+/** Brute-force guard on /api/admin/login (per IP). */
+export const ADMIN_LOGIN_MAX_ATTEMPTS = 8;
+export const ADMIN_LOGIN_WINDOW_SECONDS = 900; // 15 minutes

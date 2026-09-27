@@ -112,4 +112,38 @@ export async function deleteDonor(id: string): Promise<void> {
   await batch.commit();
 }
 
+export interface AdminDonorRecord {
+  id: string;
+  name: string;
+  phone: string;
+  bloodGroup: BloodGroup;
+  area: string;
+  available: boolean;
+  lastDonated: Date | null;
+  location: GeoPoint | null;
+  createdAt: Date | null;
+}
+
+/** Every donor, every field - for the admin panel only. Never exposed to the public API/client SDK. */
+export async function listAllDonors(): Promise<AdminDonorRecord[]> {
+  const db = adminDb();
+  const snap = await db.collection(DONORS).orderBy("createdAt", "desc").get();
+  return snap.docs.map((doc) => {
+    const d = doc.data();
+    const last = d.lastDonated as Timestamp | null;
+    const created = d.createdAt as Timestamp | null | undefined;
+    return {
+      id: doc.id,
+      name: String(d.name ?? ""),
+      phone: String(d.phone ?? ""),
+      bloodGroup: d.bloodGroup as BloodGroup,
+      area: String(d.area ?? ""),
+      available: Boolean(d.available),
+      lastDonated: last ? last.toDate() : null,
+      location: (d.location as GeoPoint | null) ?? null,
+      createdAt: created ? created.toDate() : null,
+    };
+  });
+}
+
 export { ts as toTimestamp };

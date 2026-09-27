@@ -3,22 +3,26 @@ import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
 
 /**
- * The private key survives copy-paste differently depending on where it's pasted:
- * locally, Next.js hands us the literal two-character "\n" sequences from .env.local
- * untouched, and we expand them below. On a host's own env var UI (Vercel and friends),
- * a paste can arrive as real line breaks instead, or with the surrounding quote marks
- * accidentally included. Handle all three so this isn't a recurring source of "Failed to
- * parse private key" errors.
+ * Rebuilds a well-formed PEM private key from just its base64 body, whatever shape the paste
+ * arrived in: literal two-char "\n" sequences (how Next.js hands us .env.local untouched), real
+ * line breaks that got flattened into spaces or removed entirely, Windows \r\n, or surrounding
+ * quote marks. As long as the actual base64 characters made it through intact, this always
+ * produces something the PEM parser can read - the previous version only fixed some of these
+ * shapes and kept re-breaking as the key got re-pasted differently each time.
  */
 function normalizePrivateKey(raw: string): string {
   let key = raw.trim();
   if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
     key = key.slice(1, -1).trim();
   }
-  if (key.includes("\\n") && !key.includes("\n")) {
-    key = key.replace(/\\n/g, "\n");
+  key = key.replace(/\r\n/g, "\n").replace(/\r/g, "\n").replace(/\\n/g, "\n");
+
+  const body = key.replace(/-----(BEGIN|END) PRIVATE KEY-----/g, "").replace(/\s+/g, "");
+  if (!body || !/^[A-Za-z0-9+/=]+$/.test(body) || body.length < 800) {
+    throw new Error("FIREBASE_ADMIN_PRIVATE_KEY doesn't look like a complete private key - check how it was pasted.");
   }
-  return key;
+  const lines = body.match(/.{1,64}/g) ?? [body];
+  return `-----BEGIN PRIVATE KEY-----\n${lines.join("\n")}\n-----END PRIVATE KEY-----\n`;
 }
 
 function adminApp(): App {
@@ -31,9 +35,6 @@ function adminApp(): App {
     throw new Error("Firebase Admin env vars are missing (see .env.example).");
   }
   const privateKey = normalizePrivateKey(privateKeyRaw);
-  if (!privateKey.includes("BEGIN PRIVATE KEY")) {
-    throw new Error("FIREBASE_ADMIN_PRIVATE_KEY doesn't look like a private key - check how it was pasted.");
-  }
   return initializeApp({ credential: cert({ projectId, clientEmail, privateKey }) });
 }
 
