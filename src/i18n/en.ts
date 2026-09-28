@@ -67,6 +67,7 @@ export const en = {
     listView: "List",
     mapView: "Map",
     mapLoading: "Loading map...",
+    mapAllAreas: "The map shows donors matching your blood group across all areas - pan and zoom to explore.",
   },
   card: {
     call: "Call {phone}",

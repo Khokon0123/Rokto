@@ -34,6 +34,7 @@ export default function SearchClient() {
   const [attempt, setAttempt] = useState(0);
   const configured = isFirebaseConfigured();
   const [loaded, setLoaded] = useState<Loaded | null>(null);
+  const [mapLoaded, setMapLoaded] = useState<Loaded | null>(null);
   const [nearMe, setNearMe] = useState<GeoPoint | null>(null);
   const [locating, setLocating] = useState(false);
   const [locateError, setLocateError] = useState<string | null>(null);
@@ -56,6 +57,9 @@ export default function SearchClient() {
 
   const compatible = Boolean(group) && includeCompatible;
   const key = `${group}|${area ?? ""}|${compatible}|${attempt}`;
+  // The map ignores the area filter on purpose (panning is how you explore by area on a map) - blood
+  // group still applies, since that's the actual medical need rather than a convenience filter.
+  const mapKey = `${group}|${compatible}|${attempt}`;
 
   useEffect(() => {
     if (!configured || !searched) return;
@@ -68,11 +72,25 @@ export default function SearchClient() {
     };
   }, [key, group, area, compatible, configured, searched]);
 
+  useEffect(() => {
+    if (!configured || !searched || view !== "map") return;
+    let cancelled = false;
+    searchDonors({ bloodGroup: group || null, area: null, includeCompatible: compatible })
+      .then((results) => !cancelled && setMapLoaded({ key: mapKey, results, failed: false }))
+      .catch(() => !cancelled && setMapLoaded((prev) => ({ key: mapKey, results: prev?.results ?? [], failed: true })));
+    return () => {
+      cancelled = true;
+    };
+  }, [mapKey, group, compatible, configured, searched, view]);
+
   // Previous results stay on screen while the next search loads, so the list never flashes empty.
   const results = loaded?.results ?? [];
   const displayed = nearMe ? sortByDistance(results, nearMe) : results;
   const status: "loading" | "error" | "ready" =
     loaded?.key !== key ? "loading" : loaded.failed ? "error" : "ready";
+
+  const mapResults = mapLoaded?.results ?? [];
+  const mapDisplayed = nearMe ? sortByDistance(mapResults, nearMe) : mapResults;
 
   return (
     <div className="space-y-6">
@@ -133,7 +151,7 @@ export default function SearchClient() {
         </button>
       </form>
 
-      {configured && results.length > 0 && (
+      {configured && searched && (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3 text-sm">
             {nearMe ? (
@@ -174,7 +192,12 @@ export default function SearchClient() {
 
       {!configured ? (
         <p className={cardClass}>{t.search.notConfigured}</p>
-      ) : !searched ? null : status === "error" ? (
+      ) : !searched ? null : view === "map" ? (
+        <>
+          <p className="text-sm text-muted">{t.search.mapAllAreas}</p>
+          <DonorMap results={mapDisplayed} from={nearMe} area={area} />
+        </>
+      ) : status === "error" ? (
         <div role="alert" className={`${cardClass} space-y-3`}>
           <p>{t.search.error}</p>
           <button type="button" className={btnSecondary} onClick={() => setAttempt((n) => n + 1)}>
@@ -196,15 +219,11 @@ export default function SearchClient() {
           <p aria-live="polite" className="text-sm font-semibold text-muted">
             {results.length === 1 ? t.search.countOne : fmt(t.search.count, { count: results.length })}
           </p>
-          {view === "map" ? (
-            <DonorMap results={displayed} from={nearMe} />
-          ) : (
-            <ul className="space-y-3">
-              {displayed.map((r) => (
-                <DonorCard key={r.donor.id} result={r} />
-              ))}
-            </ul>
-          )}
+          <ul className="space-y-3">
+            {displayed.map((r) => (
+              <DonorCard key={r.donor.id} result={r} />
+            ))}
+          </ul>
         </>
       )}
 

@@ -3,7 +3,7 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { useMemo } from "react";
-import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
+import { Circle, MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import { fmt, t } from "@/i18n";
 import { getArea } from "@/lib/areas";
 import { formatDate } from "@/lib/donation";
@@ -36,7 +36,21 @@ const meIcon = L.divIcon({
   iconAnchor: [8, 8],
 });
 
-export default function DonorMap({ results, from }: { results: SearchResult[]; from: GeoPoint | null }) {
+export default function DonorMap({
+  results,
+  from,
+  area,
+}: {
+  results: SearchResult[];
+  from: GeoPoint | null;
+  /** The area picked in the filter above, if any - drawn as a rough visual ring, nothing more.
+   * Donors outside it still show: the map itself is never area-restricted, only the list is. */
+  area: string | null;
+}) {
+  const areaInfo = area ? getArea(area) : undefined;
+  // Areas aren't surveyed boundaries, just approximate centers - this is a rough "roughly here"
+  // ring, not a real border. Upazilas (district) cover far more ground than city thanas.
+  const areaRadiusM = areaInfo?.group === "district" ? 6000 : 2000;
   const points = useMemo(
     () =>
       results
@@ -51,8 +65,18 @@ export default function DonorMap({ results, from }: { results: SearchResult[]; f
   const bounds = useMemo(() => {
     const all: [number, number][] = points.map((p) => [p.point.lat, p.point.lng]);
     if (from) all.push([from.lat, from.lng]);
+    if (areaInfo) {
+      // Include the area ring's extremes too, so a searched area with few/no nearby pins still
+      // ends up on screen instead of scrolling out of view.
+      const metersPerDegreeLat = 111_320;
+      const metersPerDegreeLng = metersPerDegreeLat * Math.cos((areaInfo.center.lat * Math.PI) / 180);
+      const dLat = areaRadiusM / metersPerDegreeLat;
+      const dLng = areaRadiusM / metersPerDegreeLng;
+      all.push([areaInfo.center.lat + dLat, areaInfo.center.lng + dLng]);
+      all.push([areaInfo.center.lat - dLat, areaInfo.center.lng - dLng]);
+    }
     return all.length > 0 ? L.latLngBounds(all) : null;
-  }, [points, from]);
+  }, [points, from, areaInfo, areaRadiusM]);
 
   return (
     <MapContainer
@@ -67,6 +91,13 @@ export default function DonorMap({ results, from }: { results: SearchResult[]; f
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
+      {areaInfo && (
+        <Circle
+          center={areaInfo.center}
+          radius={areaRadiusM}
+          pathOptions={{ color: "#b91c1c", weight: 1.5, fillColor: "#b91c1c", fillOpacity: 0.08 }}
+        />
+      )}
       {from && <Marker position={from} icon={meIcon} />}
       {points.map(({ result, point }) => (
         <Marker key={result.donor.id} position={point} icon={bloodIcon(result.donor.bloodGroup, result.coolingDown)}>
