@@ -54,6 +54,10 @@ export const en = {
     locating: "Finding your location...",
     nearestFirst: "Showing nearest donors first",
     clearNearest: "Back to default order",
+    viewToggle: "Switch between list and map view",
+    listView: "List",
+    mapView: "Map",
+    mapLoading: "Loading map...",
   },
   card: {
     call: "Call {phone}",

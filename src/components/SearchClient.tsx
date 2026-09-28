@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import AreaAutocomplete from "@/components/AreaAutocomplete";
 import DonorCard from "@/components/DonorCard";
@@ -10,6 +11,15 @@ import { BLOOD_GROUPS, isBloodGroup, type BloodGroup } from "@/lib/bloodGroups";
 import { isFirebaseConfigured } from "@/lib/firebase/client";
 import { getCurrentPosition, type GeoPoint } from "@/lib/geo";
 import { searchDonors, sortByDistance, type SearchResult } from "@/lib/search";
+
+const DonorMap = dynamic(() => import("@/components/DonorMap"), {
+  ssr: false,
+  loading: () => (
+    <p className="flex h-[70vh] max-h-[560px] items-center justify-center rounded-3xl border border-line bg-surface text-base text-muted">
+      {t.search.mapLoading}
+    </p>
+  ),
+});
 
 interface Loaded {
   key: string; // which search these results belong to
@@ -27,6 +37,7 @@ export default function SearchClient() {
   const [nearMe, setNearMe] = useState<GeoPoint | null>(null);
   const [locating, setLocating] = useState(false);
   const [locateError, setLocateError] = useState<string | null>(null);
+  const [view, setView] = useState<"list" | "map">("list");
 
   function useMyLocation() {
     setLocating(true);
@@ -112,19 +123,40 @@ export default function SearchClient() {
       </section>
 
       {configured && results.length > 0 && (
-        <div className="flex flex-wrap items-center gap-3 text-sm">
-          {nearMe ? (
-            <>
-              <span className="font-semibold text-ink">{t.search.nearestFirst}</span>
-              <button type="button" onClick={() => setNearMe(null)} className="font-semibold text-accent underline">
-                {t.search.clearNearest}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3 text-sm">
+            {nearMe ? (
+              <>
+                <span className="font-semibold text-ink">{t.search.nearestFirst}</span>
+                <button
+                  type="button"
+                  onClick={() => setNearMe(null)}
+                  className="font-semibold text-accent underline"
+                >
+                  {t.search.clearNearest}
+                </button>
+              </>
+            ) : (
+              <button type="button" onClick={useMyLocation} disabled={locating} className={btnSecondary}>
+                {locating ? t.search.locating : t.search.useLocation}
               </button>
-            </>
-          ) : (
-            <button type="button" onClick={useMyLocation} disabled={locating} className={btnSecondary}>
-              {locating ? t.search.locating : t.search.useLocation}
-            </button>
-          )}
+            )}
+          </div>
+          <div role="group" aria-label={t.search.viewToggle} className="flex gap-1 rounded-xl border border-line p-1">
+            {(["list", "map"] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setView(v)}
+                aria-pressed={view === v}
+                className={`min-h-9 rounded-lg px-4 text-sm font-semibold ${
+                  view === v ? "bg-accent text-white" : "text-ink"
+                }`}
+              >
+                {v === "list" ? t.search.listView : t.search.mapView}
+              </button>
+            ))}
+          </div>
         </div>
       )}
       {locateError && <p className={errorTextClass}>{errorMessage(locateError)}</p>}
@@ -153,11 +185,15 @@ export default function SearchClient() {
           <p aria-live="polite" className="text-sm font-semibold text-muted">
             {results.length === 1 ? t.search.countOne : fmt(t.search.count, { count: results.length })}
           </p>
-          <ul className="space-y-3">
-            {displayed.map((r) => (
-              <DonorCard key={r.donor.id} result={r} />
-            ))}
-          </ul>
+          {view === "map" ? (
+            <DonorMap results={displayed} from={nearMe} />
+          ) : (
+            <ul className="space-y-3">
+              {displayed.map((r) => (
+                <DonorCard key={r.donor.id} result={r} />
+              ))}
+            </ul>
+          )}
         </>
       )}
 
