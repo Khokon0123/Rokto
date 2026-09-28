@@ -14,6 +14,14 @@ export const en = {
     poweredBy: "Powered by {org}",
   },
   home: {
+    choice: {
+      searchTitle: "Looking for a donor",
+      searchBody: "Search by blood group and area, then get in touch directly.",
+      searchCta: "Search for a donor",
+      registerTitle: "Register as a donor",
+      registerBody: "Takes about a minute, and could help save a life.",
+      registerCta: "Register",
+    },
     whyTitle: "Why Rokto exists",
     whyBody:
       "When someone in Chittagong urgently needs blood, finding a willing, compatible donor nearby often comes down to luck \u2014 a scattered Facebook post, or a friend who knows a friend. The donors are already here. Rokto just makes them findable \u2014 a simple, always-open directory so help is a search away, not a scramble.",
@@ -50,6 +58,7 @@ export const en = {
     retry: "Try again",
     notConfigured: "The donor database isn't connected yet. Add your Firebase settings to .env.local.",
     registerCta: "Can you donate? Register as a donor",
+    searchCta: "Search",
     useLocation: "Use my location",
     locating: "Finding your location...",
     nearestFirst: "Showing nearest donors first",

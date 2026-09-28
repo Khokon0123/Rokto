@@ -12,7 +12,14 @@ import { t } from "@/i18n";
  */
 export default function SiteHeader() {
   const pathname = usePathname();
-  const headline = pathname === "/" ? t.hero.home : pathname === "/register" ? t.hero.register : null;
+  const headline =
+    pathname === "/"
+      ? t.hero.home
+      : pathname === "/register"
+        ? t.hero.register
+        : pathname === "/search"
+          ? t.search.heading
+          : null;
   const showRegister = pathname !== "/register"; // a link to the page you're already on would do nothing
 
   return (

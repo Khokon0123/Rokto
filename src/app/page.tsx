@@ -1,13 +1,13 @@
+import HomeChoice from "@/components/HomeChoice";
 import HomeInfo from "@/components/HomeInfo";
-import SearchClient from "@/components/SearchClient";
 
-// The homepage IS the search: public, no login. The red hero band is in the layout header;
-// the search card is pulled up over its rounded bottom edge, and the info sections sit below.
+// The homepage is just the choice: look for a donor, or register as one. The search tool itself
+// lives at /search, so nobody's details load until someone deliberately asks to search.
 export default function Home() {
   return (
     <>
       <div className="relative -mt-14">
-        <SearchClient />
+        <HomeChoice />
       </div>
       <HomeInfo />
     </>

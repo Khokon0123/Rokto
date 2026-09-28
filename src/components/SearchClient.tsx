@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import AreaAutocomplete from "@/components/AreaAutocomplete";
 import DonorCard from "@/components/DonorCard";
-import { btnSecondary, cardClass, errorTextClass, inputClass, labelClass } from "@/components/styles";
+import { btnPrimary, btnSecondary, cardClass, errorTextClass, inputClass, labelClass } from "@/components/styles";
 import { errorMessage, fmt, t } from "@/i18n";
 import { BLOOD_GROUPS, isBloodGroup, type BloodGroup } from "@/lib/bloodGroups";
 import { isFirebaseConfigured } from "@/lib/firebase/client";
@@ -38,6 +38,7 @@ export default function SearchClient() {
   const [locating, setLocating] = useState(false);
   const [locateError, setLocateError] = useState<string | null>(null);
   const [view, setView] = useState<"list" | "map">("list");
+  const [searched, setSearched] = useState(false);
 
   function useMyLocation() {
     setLocating(true);
@@ -57,7 +58,7 @@ export default function SearchClient() {
   const key = `${group}|${area ?? ""}|${compatible}|${attempt}`;
 
   useEffect(() => {
-    if (!configured) return;
+    if (!configured || !searched) return;
     let cancelled = false;
     searchDonors({ bloodGroup: group || null, area, includeCompatible: compatible })
       .then((results) => !cancelled && setLoaded({ key, results, failed: false }))
@@ -65,7 +66,7 @@ export default function SearchClient() {
     return () => {
       cancelled = true;
     };
-  }, [key, group, area, compatible, configured]);
+  }, [key, group, area, compatible, configured, searched]);
 
   // Previous results stay on screen while the next search loads, so the list never flashes empty.
   const results = loaded?.results ?? [];
@@ -75,8 +76,14 @@ export default function SearchClient() {
 
   return (
     <div className="space-y-6">
-      {/* The page headline now lives in the red hero band (SiteHeader). */}
-      <section
+      {/* The page headline now lives in the red hero band (SiteHeader). Nothing is searched until
+          the button below is pressed - arriving here never dumps the whole donor list on screen. */}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          setSearched(true);
+          setAttempt((n) => n + 1);
+        }}
         aria-label={t.search.heading}
         className="space-y-5 rounded-3xl border border-line bg-surface p-5 shadow-lift"
       >
@@ -120,7 +127,11 @@ export default function SearchClient() {
             </span>
           </label>
         )}
-      </section>
+
+        <button type="submit" className={`${btnPrimary} w-full`}>
+          {t.search.searchCta}
+        </button>
+      </form>
 
       {configured && results.length > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -163,7 +174,7 @@ export default function SearchClient() {
 
       {!configured ? (
         <p className={cardClass}>{t.search.notConfigured}</p>
-      ) : status === "error" ? (
+      ) : !searched ? null : status === "error" ? (
         <div role="alert" className={`${cardClass} space-y-3`}>
           <p>{t.search.error}</p>
           <button type="button" className={btnSecondary} onClick={() => setAttempt((n) => n + 1)}>
