@@ -20,8 +20,8 @@ export interface TeamMember {
   photo: string;
 }
 export const TEAM: TeamMember[] = [
-  { name: "Khokon Barua", role: "Founder & Developer", photo: "/team/khokon.jpg" },
   { name: "Wasiful Karim Wasif", role: "Founder & Developer", photo: "/team/wasif.jpg" },
+  { name: "Khokon Barua", role: "Founder & Developer", photo: "/team/khokon.jpg" },
 ];
 
 /** Donors who gave blood within this many days are listed below ready donors. */
