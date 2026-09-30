@@ -2,9 +2,16 @@
 export const APP_NAME = "Rokto";
 export const APP_NAME_BN = "রক্ত";
 
-/** The organization behind the site. Set ORG_URL to link the footer credit (null = plain text). */
-export const ORG_NAME = "Nandan";
-export const ORG_URL: string | null = null;
+/** The people/orgs behind the site, credited in the footer as "Powered by A & B ...".
+ *  Give a url to link that name; leave it null for plain text. */
+export interface OrgCredit {
+  name: string;
+  url: string | null;
+}
+export const ORGS: OrgCredit[] = [
+  { name: "Nandan", url: null },
+  { name: "Green Education", url: null },
+];
 
 /** Donors who gave blood within this many days are listed below ready donors. */
 export const DONATION_COOLDOWN_DAYS = 90;
