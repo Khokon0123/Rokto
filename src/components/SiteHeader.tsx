@@ -19,8 +19,11 @@ export default function SiteHeader() {
         ? t.hero.register
         : pathname === "/search"
           ? t.search.heading
-          : null;
+          : pathname === "/team"
+            ? t.hero.team
+            : null;
   const showRegister = pathname !== "/register"; // a link to the page you're already on would do nothing
+  const showTeam = pathname !== "/team";
 
   return (
     <header
@@ -38,14 +41,24 @@ export default function SiteHeader() {
             <span className="text-2xl font-extrabold tracking-tight">{APP_NAME}</span>
             <span className="text-lg text-white/85">{APP_NAME_BN}</span>
           </Link>
-          {showRegister && (
-            <Link
-              href="/register"
-              className="inline-flex min-h-12 items-center rounded-full border border-white/70 px-5 text-sm font-semibold text-white hover:bg-white/10 focus-visible:outline-white"
-            >
-              {t.nav.register}
-            </Link>
-          )}
+          <div className="flex items-center gap-4">
+            {showTeam && (
+              <Link
+                href="/team"
+                className="inline-flex min-h-12 items-center text-sm font-semibold text-white/85 hover:text-white hover:underline focus-visible:outline-white"
+              >
+                {t.nav.team}
+              </Link>
+            )}
+            {showRegister && (
+              <Link
+                href="/register"
+                className="inline-flex min-h-12 items-center rounded-full border border-white/70 px-5 text-sm font-semibold text-white hover:bg-white/10 focus-visible:outline-white"
+              >
+                {t.nav.register}
+              </Link>
+            )}
+          </div>
         </div>
         {headline && (
           <h1 className="mt-7 max-w-md text-4xl font-extrabold leading-[1.1] tracking-tight">{headline}</h1>

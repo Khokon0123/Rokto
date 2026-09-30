@@ -13,6 +13,16 @@ export const ORGS: OrgCredit[] = [
   { name: "Green Education", url: null },
 ];
 
+/** Shown on /team. photo is a path under /public. */
+export interface TeamMember {
+  name: string;
+  role: string;
+  photo: string;
+}
+export const TEAM: TeamMember[] = [
+  { name: "Khokon Barua", role: "Founder & Developer", photo: "/team/khokon.jpg" },
+];
+
 /** Donors who gave blood within this many days are listed below ready donors. */
 export const DONATION_COOLDOWN_DAYS = 90;
 

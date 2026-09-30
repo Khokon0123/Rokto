@@ -4,11 +4,13 @@ export const en = {
   hero: {
     home: "Find a blood donor near you",
     register: "Register as a donor",
+    team: "The team behind Rokto",
   },
   nav: {
     register: "Register as a donor",
     recover: "Lost your edit link?",
     home: "Find blood",
+    team: "Team",
   },
   footer: {
     poweredBy: "Powered by {org}",
@@ -68,6 +70,9 @@ export const en = {
     mapView: "Map",
     mapLoading: "Loading map...",
     mapAllAreas: "The map shows donors matching your blood group across all areas - pan and zoom to explore.",
+  },
+  team: {
+    intro: "Rokto is built and run by:",
   },
   card: {
     call: "Call {phone}",
