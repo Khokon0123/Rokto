@@ -22,7 +22,7 @@ function OrgCredit() {
               alt={org.name}
               width={128}
               height={128}
-              className="h-16 w-16 rounded-full"
+              className="h-16 w-16 rounded-full ring-2 ring-white/90"
             />
           ) : org.url ? (
             <a href={org.url} target="_blank" rel="noopener noreferrer" className="font-semibold underline">
@@ -42,10 +42,11 @@ export default function SiteFooter() {
   const [before, after] = fmt(t.footer.poweredBy, { org: "\u0000" }).split("\u0000");
 
   return (
-    <footer className="border-t border-line bg-surface">
+    // Mirrors the header band: same red, same 2rem curve, so the page is bookended.
+    <footer className="rounded-t-[2rem] bg-gradient-to-b from-accent to-accent-dark text-white">
       {/* flex-wrap, not a plain <p>: the logo is taller than the line, so the credit needs to
           sit on a baseline-free centred row that can wrap on narrow phones. */}
-      <div className="mx-auto flex w-full max-w-2xl flex-wrap items-center justify-center gap-x-1.5 gap-y-1 px-4 py-4 text-center text-sm text-muted">
+      <div className="mx-auto flex w-full max-w-2xl flex-wrap items-center justify-center gap-x-1.5 gap-y-1 px-4 py-5 text-center text-sm text-white/90">
         {before && <span>{before}</span>}
         <OrgCredit />
         {after && <span>{after}</span>}
