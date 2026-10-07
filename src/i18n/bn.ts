@@ -11,9 +11,11 @@ export const bn: Messages = {
   },
   nav: {
     register: "রক্তদাতা হিসেবে নিবন্ধন করুন",
+    registerShort: "নিবন্ধন",
     recover: "এডিট লিংক হারিয়ে গেছে?",
     home: "রক্ত খুঁজুন",
     team: "টিম",
+    switchLanguage: "ইংরেজিতে দেখুন",
   },
   footer: {
     poweredBy: "{org} দ্বারা পরিচালিত",

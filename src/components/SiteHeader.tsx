@@ -13,6 +13,7 @@ import { APP_NAME, APP_NAME_BN } from "@/config/app";
 export default function SiteHeader() {
   const t = useT();
   const { locale, setLocale } = useLocale();
+  const otherLocale = locale === "bn" ? "en" : "bn";
   const pathname = usePathname();
   const headline =
     pathname === "/"
@@ -43,11 +44,11 @@ export default function SiteHeader() {
             <span className="text-2xl font-extrabold tracking-tight">{APP_NAME}</span>
             <span className="text-lg text-white/85">{APP_NAME_BN}</span>
           </Link>
-          <div className="flex items-center gap-4">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             {showTeam && (
               <Link
                 href="/team"
-                className="inline-flex min-h-12 items-center text-sm font-semibold text-white/85 hover:text-white hover:underline focus-visible:outline-white"
+                className="inline-flex min-h-12 shrink-0 items-center whitespace-nowrap text-sm font-semibold text-white/85 hover:text-white hover:underline focus-visible:outline-white"
               >
                 {t.nav.team}
               </Link>
@@ -55,37 +56,22 @@ export default function SiteHeader() {
             {showRegister && (
               <Link
                 href="/register"
-                className="inline-flex min-h-12 items-center rounded-full border border-white/70 px-5 text-sm font-semibold text-white hover:bg-white/10 focus-visible:outline-white"
+                className="inline-flex min-h-12 shrink-0 items-center whitespace-nowrap rounded-full border border-white/70 px-4 text-sm font-semibold text-white hover:bg-white/10 focus-visible:outline-white sm:px-5"
               >
-                {t.nav.register}
+                <span className="sm:hidden">{t.nav.registerShort}</span>
+                <span className="hidden sm:inline">{t.nav.register}</span>
               </Link>
             )}
-            <div
-              role="group"
-              aria-label="Language / ভাষা"
-              className="flex items-center gap-1 rounded-full border border-white/40 p-0.5 text-xs font-bold"
+            {/* One tap, one pill: it shows the language you'd switch TO, so it never needs room
+                for both names next to an already-tight nav on a 360px phone. */}
+            <button
+              type="button"
+              onClick={() => setLocale(otherLocale)}
+              aria-label={t.nav.switchLanguage}
+              className="inline-flex min-h-9 shrink-0 items-center whitespace-nowrap rounded-full border border-white/40 px-3 text-xs font-bold text-white hover:bg-white/10 focus-visible:outline-white"
             >
-              <button
-                type="button"
-                onClick={() => setLocale("bn")}
-                aria-pressed={locale === "bn"}
-                className={`min-h-8 rounded-full px-3 ${
-                  locale === "bn" ? "bg-white text-accent-deep" : "text-white/85"
-                }`}
-              >
-                বাংলা
-              </button>
-              <button
-                type="button"
-                onClick={() => setLocale("en")}
-                aria-pressed={locale === "en"}
-                className={`min-h-8 rounded-full px-3 ${
-                  locale === "en" ? "bg-white text-accent-deep" : "text-white/85"
-                }`}
-              >
-                EN
-              </button>
-            </div>
+              {otherLocale === "en" ? "EN" : "বাংলা"}
+            </button>
           </div>
         </div>
         {headline && (

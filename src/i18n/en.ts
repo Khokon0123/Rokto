@@ -8,9 +8,12 @@ export const en = {
   },
   nav: {
     register: "Register as a donor",
+    // Short form for the header pill: the full sentence doesn't fit beside the language switch.
+    registerShort: "Register",
     recover: "Lost your edit link?",
     home: "Find blood",
     team: "Team",
+    switchLanguage: "Switch to Bangla",
   },
   footer: {
     poweredBy: "Powered by {org}",
