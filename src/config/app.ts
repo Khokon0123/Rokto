@@ -13,7 +13,7 @@ export interface OrgCredit {
 }
 export const ORGS: OrgCredit[] = [
   { name: "Nandan", url: null, logo: "/orgs/nandan.png" },
-  { name: "Green Education", url: null },
+  { name: "Green Education", url: null, logo: "/orgs/green-education.png" },
 ];
 
 /** Shown on /team. photo is a path under /public. */
