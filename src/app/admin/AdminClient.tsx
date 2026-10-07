@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import BloodBadge from "@/components/BloodBadge";
 import { btnPrimary, btnSecondary, cardClass, inputClass, labelClass } from "@/components/styles";
-import { useErrorMessage, useT } from "@/components/LocaleProvider";
+import { useErrorMessage, useLocale, useT } from "@/components/LocaleProvider";
 import { fmt } from "@/i18n";
+import { formatNumber } from "@/i18n/locale";
 import { apiCall } from "@/lib/api";
 import { AREAS, getArea } from "@/lib/areas";
 import { BLOOD_GROUPS, type BloodGroup } from "@/lib/bloodGroups";
@@ -37,6 +38,7 @@ async function fetchDonors(): Promise<{ ok: boolean; donors?: AdminDonor[]; erro
 export default function AdminClient() {
   const t = useT();
   const errorMessage = useErrorMessage();
+  const { locale } = useLocale();
   const [donors, setDonors] = useState<AdminDonor[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -168,7 +170,7 @@ export default function AdminClient() {
 
       {donors !== null && (
         <>
-          <p className="text-sm text-muted">{fmt(t.admin.count, { shown: filtered.length, total: donors.length })}</p>
+          <p className="text-sm text-muted">{fmt(t.admin.count, { shown: formatNumber(filtered.length, locale), total: formatNumber(donors.length, locale) })}</p>
           <ul className="space-y-3">
             {filtered.map((d) => (
               <li key={d.id} className={cardClass}>
@@ -183,7 +185,7 @@ export default function AdminClient() {
                     <p className="text-sm text-muted">
                       {d.available ? t.admin.available : t.admin.unavailable}
                       {" · "}
-                      {d.lastDonated ? fmt(t.card.lastDonated, { date: formatDate(new Date(d.lastDonated)) }) : t.card.lastDonatedNone}
+                      {d.lastDonated ? fmt(t.card.lastDonated, { date: formatDate(new Date(d.lastDonated), locale) }) : t.card.lastDonatedNone}
                     </p>
                     {d.location && (
                       <a
@@ -197,7 +199,7 @@ export default function AdminClient() {
                     )}
                     {d.createdAt && (
                       <p className="mt-1 text-xs text-muted">
-                        {fmt(t.admin.registered, { date: formatDate(new Date(d.createdAt)) })}
+                        {fmt(t.admin.registered, { date: formatDate(new Date(d.createdAt), locale) })}
                       </p>
                     )}
                   </div>

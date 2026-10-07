@@ -4,11 +4,14 @@ import { ApiError } from "./http";
 
 const DEFAULT_BULKSMSBD_URL = "https://bulksmsbd.net/api/smsapi";
 const DEFAULT_ALPHA_URL = "https://api.sms.net.bd/sendsms";
+const DEFAULT_BULKSMSDHAKA_URL = "https://bulksmsdhaka.net/api/sendtext";
 
 /**
  * Sends the OTP text. Provider is chosen with SMS_PROVIDER:
  *   "alpha"     - real SMS through Alpha SMS (needs ALPHA_SMS_API_KEY; ALPHA_SMS_SENDER_ID optional)
  *   "bulksmsbd" - real SMS through BulkSMSBD (non-masking, needs BULKSMSBD_API_KEY + BULKSMSBD_SENDER_ID)
+ *   "bulksmsdhaka" - real SMS through Bulk SMS Dhaka (needs BULKSMSDHAKA_API_KEY;
+ *                    BULKSMSDHAKA_SENDER_ID optional - non-masking sends from a random sender)
  *   "console"   - development only: prints the code in the terminal, sends nothing (free testing)
  * To use another Bangladeshi gateway later, add a branch here; nothing else needs to change.
  */
@@ -94,6 +97,43 @@ export async function sendOtpSms(phoneE164: string, code: string, ttlMinutes: nu
     // Never log the code or the key.
     if (Number(result.error) !== 0) {
       console.error("Alpha SMS rejected the SMS, error:", result.error, result.msg);
+      throw new ApiError(502, "sms_failed");
+    }
+    return;
+  }
+
+  if (provider === "bulksmsdhaka") {
+    const apiKey = process.env.BULKSMSDHAKA_API_KEY;
+    const senderId = process.env.BULKSMSDHAKA_SENDER_ID; // optional: non-masking sends from a random sender
+    if (!apiKey) {
+      console.error("BULKSMSDHAKA_API_KEY is not set.");
+      throw new ApiError(503, "sms_unavailable");
+    }
+    // This gateway documents GET with the key in the query string - unlike the two above, which
+    // take POST. The URL is never logged anywhere below, and anything we do log is redacted.
+    const url = new URL(process.env.BULKSMSDHAKA_API_URL ?? DEFAULT_BULKSMSDHAKA_URL);
+    url.searchParams.set("apikey", apiKey);
+    url.searchParams.set("number", phoneE164.replace(/^\+/, "")); // wants 8801XXXXXXXXX
+    url.searchParams.set("message", message);
+    if (senderId) url.searchParams.set("callerID", senderId);
+
+    const redact = (text: string) => text.split(apiKey).join("***");
+    let result: { Status?: string | number; Success?: string | boolean; Message?: string } = {};
+    try {
+      const res = await fetch(url, {
+        method: "GET",
+        signal: AbortSignal.timeout(10_000),
+        cache: "no-store",
+      });
+      result = (await res.json().catch(() => ({}))) as typeof result;
+    } catch (e) {
+      console.error("Bulk SMS Dhaka request failed:", redact(e instanceof Error ? e.message : String(e)));
+      throw new ApiError(502, "sms_failed");
+    }
+    // 1000 = accepted. Others include 1005 (flagged as spam) and 2001 (no balance).
+    // Never log the code or the key.
+    if (String(result.Status) !== "1000") {
+      console.error("Bulk SMS Dhaka rejected the SMS, status:", result.Status, redact(String(result.Message ?? "")));
       throw new ApiError(502, "sms_failed");
     }
     return;

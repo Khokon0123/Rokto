@@ -5,9 +5,10 @@ import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import AreaAutocomplete from "@/components/AreaAutocomplete";
 import DonorCard from "@/components/DonorCard";
-import { useErrorMessage, useT } from "@/components/LocaleProvider";
+import { useErrorMessage, useLocale, useT } from "@/components/LocaleProvider";
 import { btnPrimary, btnSecondary, cardClass, errorTextClass, inputClass, labelClass } from "@/components/styles";
 import { fmt } from "@/i18n";
+import { formatNumber } from "@/i18n/locale";
 import { BLOOD_GROUPS, isBloodGroup, type BloodGroup } from "@/lib/bloodGroups";
 import { isFirebaseConfigured } from "@/lib/firebase/client";
 import { getCurrentPosition, type GeoPoint } from "@/lib/geo";
@@ -35,6 +36,7 @@ interface Loaded {
 export default function SearchClient() {
   const t = useT();
   const errorMessage = useErrorMessage();
+  const { locale } = useLocale();
   const [group, setGroup] = useState<BloodGroup | "">("");
   const [area, setArea] = useState<string | null>(null);
   const [includeCompatible, setIncludeCompatible] = useState(false);
@@ -172,11 +174,7 @@ export default function SearchClient() {
                   {t.search.clearNearest}
                 </button>
               </>
-            ) : (
-              <button type="button" onClick={useMyLocation} disabled={locating} className={btnSecondary}>
-                {locating ? t.search.locating : t.search.useLocation}
-              </button>
-            )}
+            ) : null}
           </div>
           <div role="group" aria-label={t.search.viewToggle} className="flex gap-1 rounded-xl border border-line p-1">
             {(["list", "map"] as const).map((v) => (
@@ -193,6 +191,23 @@ export default function SearchClient() {
               </button>
             ))}
           </div>
+        </div>
+      )}
+      {/* Distance is the first thing you want in an emergency, but it can only be worked out from
+          the searcher's own position - so ask for it with the reason stated, rather than leaving
+          it behind an unexplained "use my location" button that most people scroll straight past. */}
+      {configured && searched && !nearMe && (view === "map" || results.length > 0) && (
+        <div className="rounded-3xl border-2 border-accent bg-accent-soft p-5">
+          <p className="text-lg font-bold text-accent-deep">{t.search.distanceTitle}</p>
+          <p className="mt-1 text-base text-ink">{t.search.distanceBody}</p>
+          <button
+            type="button"
+            onClick={useMyLocation}
+            disabled={locating}
+            className={`${btnPrimary} mt-4 w-full`}
+          >
+            {locating ? t.search.locating : t.search.useLocation}
+          </button>
         </div>
       )}
       {locateError && <p className={errorTextClass}>{errorMessage(locateError)}</p>}
@@ -224,7 +239,7 @@ export default function SearchClient() {
       ) : (
         <>
           <p aria-live="polite" className="text-sm font-semibold text-muted">
-            {results.length === 1 ? t.search.countOne : fmt(t.search.count, { count: results.length })}
+            {results.length === 1 ? t.search.countOne : fmt(t.search.count, { count: formatNumber(results.length, locale) })}
           </p>
           <ul className="space-y-3">
             {displayed.map((r) => (

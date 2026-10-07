@@ -68,6 +68,9 @@ export const en = {
     locating: "Finding your location...",
     nearestFirst: "Showing nearest donors first",
     clearNearest: "Back to default order",
+    distanceTitle: "See how far away each donor is",
+    distanceBody:
+      "Share your location and every donor shows the distance to you, with the nearest ones first. It stays on your phone - it is never sent anywhere.",
     viewToggle: "Switch between list and map view",
     listView: "List",
     mapView: "Map",

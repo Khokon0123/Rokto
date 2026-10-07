@@ -3,6 +3,8 @@
 // ever written to the public `donors` doc, so a public profile can't be used to pinpoint a
 // specific house.
 
+import { DEFAULT_LOCALE, intlLocale, type Locale } from "@/i18n/locale";
+
 export interface GeoPoint {
   lat: number;
   lng: number;
@@ -56,12 +58,23 @@ export function fuzzGeoPoint(p: GeoPoint, radiusMeters = 250): GeoPoint {
   };
 }
 
-/** "450 m" under a kilometer, "3.2 km" above it. */
-export function formatDistanceKm(km: number): string {
+/** "450 m" under a kilometer, "3.2 km" above it - in the page's own digits and units,
+ *  so a Bangla page reads "৪৫০ মি" / "৩.২ কিমি" rather than Latin figures. */
+export function formatDistanceKm(km: number, locale: Locale = DEFAULT_LOCALE): string {
   if (!Number.isFinite(km)) return "";
-  if (km < 1) return `${Math.max(1, Math.round(km * 1000))} m`;
-  if (km < 10) return `${km.toFixed(1)} km`;
-  return `${Math.round(km)} km`;
+  const meters = km < 1;
+  const value = meters ? Math.max(1, Math.round(km * 1000)) : km < 10 ? Number(km.toFixed(1)) : Math.round(km);
+  const opts: Intl.NumberFormatOptions = {
+    style: "unit",
+    unit: meters ? "meter" : "kilometer",
+    unitDisplay: "short",
+    maximumFractionDigits: meters ? 0 : 1,
+  };
+  try {
+    return new Intl.NumberFormat(intlLocale(locale), opts).format(value);
+  } catch {
+    return `${value} ${meters ? "m" : "km"}`;
+  }
 }
 
 /** Wraps the browser Geolocation API in a promise; rejects with a short error code. */

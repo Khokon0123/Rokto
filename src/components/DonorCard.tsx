@@ -1,6 +1,6 @@
 "use client";
 
-import { useT } from "@/components/LocaleProvider";
+import { useLocale, useT } from "@/components/LocaleProvider";
 import { fmt } from "@/i18n";
 import { getArea } from "@/lib/areas";
 import { formatDate } from "@/lib/donation";
@@ -12,6 +12,7 @@ import { btnPrimary, btnSecondary, cardClass } from "./styles";
 
 export default function DonorCard({ result }: { result: SearchResult }) {
   const t = useT();
+  const { locale } = useLocale();
   const { donor, coolingDown, distanceKm } = result;
   const areaLabel = getArea(donor.area)?.label ?? donor.area;
 
@@ -26,13 +27,13 @@ export default function DonorCard({ result }: { result: SearchResult }) {
             {typeof distanceKm === "number" && distanceKm !== Infinity && (
               <span className="text-muted">
                 {" "}
-                {"·"} {fmt(t.card.distanceAway, { distance: formatDistanceKm(distanceKm) })}
+                {"·"} {fmt(t.card.distanceAway, { distance: formatDistanceKm(distanceKm, locale) })}
               </span>
             )}
           </p>
           <p className="text-sm text-muted">
             {donor.lastDonated
-              ? fmt(t.card.lastDonated, { date: formatDate(donor.lastDonated) })
+              ? fmt(t.card.lastDonated, { date: formatDate(donor.lastDonated, locale) })
               : t.card.lastDonatedNone}
           </p>
           {donor.location && (

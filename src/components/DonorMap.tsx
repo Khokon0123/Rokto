@@ -4,7 +4,7 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { useMemo } from "react";
 import { Circle, MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
-import { useT } from "@/components/LocaleProvider";
+import { useLocale, useT } from "@/components/LocaleProvider";
 import { fmt } from "@/i18n";
 import { getArea } from "@/lib/areas";
 import { formatDate } from "@/lib/donation";
@@ -49,6 +49,7 @@ export default function DonorMap({
   area: string | null;
 }) {
   const t = useT();
+  const { locale } = useLocale();
   const areaInfo = area ? getArea(area) : undefined;
   // Areas aren't surveyed boundaries, just approximate centers - this is a rough "roughly here"
   // ring, not a real border. Upazilas (district) cover far more ground than city thanas.
@@ -109,12 +110,12 @@ export default function DonorMap({
               <p className="text-sm">{getArea(result.donor.area)?.label ?? result.donor.area}</p>
               {typeof result.distanceKm === "number" && Number.isFinite(result.distanceKm) && (
                 <p className="text-sm text-muted">
-                  {fmt(t.card.distanceAway, { distance: formatDistanceKm(result.distanceKm) })}
+                  {fmt(t.card.distanceAway, { distance: formatDistanceKm(result.distanceKm, locale) })}
                 </p>
               )}
               <p className="text-sm text-muted">
                 {result.donor.lastDonated
-                  ? fmt(t.card.lastDonated, { date: formatDate(result.donor.lastDonated) })
+                  ? fmt(t.card.lastDonated, { date: formatDate(result.donor.lastDonated, locale) })
                   : t.card.lastDonatedNone}
               </p>
               <a href={`tel:${result.donor.phone}`} className="block font-semibold text-accent underline">

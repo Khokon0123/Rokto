@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { OTP_RESEND_SECONDS } from "@/config/app";
-import { useErrorMessage, useT } from "@/components/LocaleProvider";
+import { useErrorMessage, useLocale, useT } from "@/components/LocaleProvider";
 import { fmt } from "@/i18n";
+import { formatNumber } from "@/i18n/locale";
 import { formatLocalPhone } from "@/lib/phone";
 import { usePhoneOtp } from "@/lib/usePhoneOtp";
 import { btnPrimary, cardClass, errorTextClass, inputClass, labelClass } from "./styles";
@@ -19,6 +20,7 @@ interface Props {
 export default function OtpVerification({ phone, onVerified, onCancel }: Props) {
   const t = useT();
   const errorMessage = useErrorMessage();
+  const { locale } = useLocale();
   const { holder, status, errorCode, sendCode, verifyCode } = usePhoneOtp();
   const [code, setCode] = useState("");
   const [cooldown, setCooldown] = useState(OTP_RESEND_SECONDS);
@@ -93,7 +95,7 @@ export default function OtpVerification({ phone, onVerified, onCancel }: Props) 
           disabled={cooldown > 0 || busy}
           className="min-h-11 font-semibold text-accent underline disabled:text-muted disabled:no-underline"
         >
-          {cooldown > 0 ? fmt(t.otp.resendIn, { seconds: cooldown }) : t.otp.resend}
+          {cooldown > 0 ? fmt(t.otp.resendIn, { seconds: formatNumber(cooldown, locale) }) : t.otp.resend}
         </button>
       </div>
     </div>
