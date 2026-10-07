@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useLocale, useT } from "@/components/LocaleProvider";
 import { APP_NAME, APP_NAME_BN } from "@/config/app";
-import { t } from "@/i18n";
 
 /**
  * Red hero band at the top of every page. On the homepage and the register page it also carries the
@@ -11,6 +11,8 @@ import { t } from "@/i18n";
  * Other pages (edit, recover) get the same band in a compact form.
  */
 export default function SiteHeader() {
+  const t = useT();
+  const { locale, setLocale } = useLocale();
   const pathname = usePathname();
   const headline =
     pathname === "/"
@@ -58,6 +60,32 @@ export default function SiteHeader() {
                 {t.nav.register}
               </Link>
             )}
+            <div
+              role="group"
+              aria-label="Language / ভাষা"
+              className="flex items-center gap-1 rounded-full border border-white/40 p-0.5 text-xs font-bold"
+            >
+              <button
+                type="button"
+                onClick={() => setLocale("bn")}
+                aria-pressed={locale === "bn"}
+                className={`min-h-8 rounded-full px-3 ${
+                  locale === "bn" ? "bg-white text-accent-deep" : "text-white/85"
+                }`}
+              >
+                বাংলা
+              </button>
+              <button
+                type="button"
+                onClick={() => setLocale("en")}
+                aria-pressed={locale === "en"}
+                className={`min-h-8 rounded-full px-3 ${
+                  locale === "en" ? "bg-white text-accent-deep" : "text-white/85"
+                }`}
+              >
+                EN
+              </button>
+            </div>
           </div>
         </div>
         {headline && (

@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { OTP_RESEND_SECONDS } from "@/config/app";
-import { errorMessage, fmt, t } from "@/i18n";
+import { useErrorMessage, useT } from "@/components/LocaleProvider";
+import { fmt } from "@/i18n";
 import { formatLocalPhone } from "@/lib/phone";
 import { usePhoneOtp } from "@/lib/usePhoneOtp";
 import { btnPrimary, cardClass, errorTextClass, inputClass, labelClass } from "./styles";
@@ -16,6 +17,8 @@ interface Props {
 
 /** Sends a code to `phone` on mount, then collects and verifies it. Reused by every OTP step. */
 export default function OtpVerification({ phone, onVerified, onCancel }: Props) {
+  const t = useT();
+  const errorMessage = useErrorMessage();
   const { holder, status, errorCode, sendCode, verifyCode } = usePhoneOtp();
   const [code, setCode] = useState("");
   const [cooldown, setCooldown] = useState(OTP_RESEND_SECONDS);

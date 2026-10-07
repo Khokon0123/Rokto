@@ -7,8 +7,8 @@ import EditLinkCard from "@/components/EditLinkCard";
 import LocationField from "@/components/LocationField";
 import OtpVerification from "@/components/OtpVerification";
 import Switch from "@/components/Switch";
+import { useErrorMessage, useT } from "@/components/LocaleProvider";
 import { btnPrimary, btnSecondary, cardClass, errorTextClass, inputClass, labelClass } from "@/components/styles";
-import { errorMessage, t } from "@/i18n";
 import { apiCall } from "@/lib/api";
 import { BLOOD_GROUPS, isBloodGroup } from "@/lib/bloodGroups";
 import { isFirebaseConfigured } from "@/lib/firebase/client";
@@ -22,6 +22,8 @@ type FieldErrors = Partial<
 >;
 
 export default function RegisterPage() {
+  const t = useT();
+  const errorMessage = useErrorMessage();
   const [step, setStep] = useState<Step>("form");
   const [name, setName] = useState("");
   const [phoneInput, setPhoneInput] = useState("");

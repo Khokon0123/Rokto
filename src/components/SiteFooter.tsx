@@ -1,5 +1,8 @@
+"use client";
+
+import { useT } from "@/components/LocaleProvider";
 import { ORGS } from "@/config/app";
-import { fmt, t } from "@/i18n";
+import { fmt } from "@/i18n";
 
 /** "Nandan & Green Education" - each name links out if it has a url, joined with "&". */
 function OrgCredit() {
@@ -22,6 +25,7 @@ function OrgCredit() {
 }
 
 export default function SiteFooter() {
+  const t = useT();
   const [before, after] = fmt(t.footer.poweredBy, { org: "\u0000" }).split("\u0000");
 
   return (

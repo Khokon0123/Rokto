@@ -1,12 +1,15 @@
+"use client";
+
 import Link from "next/link";
+import { useT } from "@/components/LocaleProvider";
 import { btnPrimary, btnSecondary, cardClass } from "@/components/styles";
-import { t } from "@/i18n";
 
 /**
  * The homepage's job is just this choice - it never runs a search or shows anyone's details on
  * its own. Search lives at /search, reached deliberately, not dumped on screen on arrival.
  */
 export default function HomeChoice() {
+  const t = useT();
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <div className={`${cardClass} flex flex-col gap-4`}>

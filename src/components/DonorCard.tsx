@@ -1,4 +1,7 @@
-import { t, fmt } from "@/i18n";
+"use client";
+
+import { useT } from "@/components/LocaleProvider";
+import { fmt } from "@/i18n";
 import { getArea } from "@/lib/areas";
 import { formatDate } from "@/lib/donation";
 import { formatDistanceKm } from "@/lib/geo";
@@ -8,6 +11,7 @@ import BloodBadge from "./BloodBadge";
 import { btnPrimary, btnSecondary, cardClass } from "./styles";
 
 export default function DonorCard({ result }: { result: SearchResult }) {
+  const t = useT();
   const { donor, coolingDown, distanceKm } = result;
   const areaLabel = getArea(donor.area)?.label ?? donor.area;
 

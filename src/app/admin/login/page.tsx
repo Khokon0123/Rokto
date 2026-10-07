@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { useErrorMessage, useT } from "@/components/LocaleProvider";
 import { btnPrimary, cardClass, errorTextClass, inputClass, labelClass } from "@/components/styles";
-import { errorMessage, t } from "@/i18n";
 import { apiCall } from "@/lib/api";
 
 export default function AdminLoginPage() {
+  const t = useT();
+  const errorMessage = useErrorMessage();
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);

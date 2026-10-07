@@ -1,8 +1,8 @@
 "use client";
 
 import { useId, useMemo, useState, type KeyboardEvent } from "react";
+import { useT } from "@/components/LocaleProvider";
 import { filterAreas, getArea, type Area, type AreaGroup } from "@/lib/areas";
-import { t } from "@/i18n";
 import { errorTextClass, inputClass, labelClass } from "./styles";
 
 interface Props {
@@ -15,17 +15,17 @@ interface Props {
   error?: string | null;
 }
 
-const GROUP_LABEL: Record<AreaGroup, string> = {
-  city: t.area.groupCity,
-  district: t.area.groupDistrict,
-};
-
 /**
  * Autocomplete combobox over the static Chittagong area list. Shared by the homepage search and
  * the donor register / edit forms. Free text is never emitted: search depends on donor profiles
  * and queries holding exactly the same area ids, so typing only filters; you must pick a row.
  */
 export default function AreaAutocomplete({ value, onChange, label, placeholder, required, error }: Props) {
+  const t = useT();
+  const GROUP_LABEL: Record<AreaGroup, string> = {
+    city: t.area.groupCity,
+    district: t.area.groupDistrict,
+  };
   const uid = useId();
   const inputId = `${uid}-input`;
   const listId = `${uid}-list`;

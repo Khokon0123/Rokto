@@ -1,15 +1,14 @@
+"use client";
+
 import Image from "next/image";
+import { useT } from "@/components/LocaleProvider";
 import { cardClass } from "@/components/styles";
 import { TEAM } from "@/config/app";
-import { t } from "@/i18n";
-
-export const metadata = {
-  title: "Team",
-};
 
 // Same pattern as /register and /search: the page headline lives in the red hero band
 // (SiteHeader), so this content starts with a negative margin to sit under it.
 export default function TeamPage() {
+  const t = useT();
   return (
     <div className="relative -mt-14 space-y-5">
       <div className={`${cardClass} space-y-5`}>

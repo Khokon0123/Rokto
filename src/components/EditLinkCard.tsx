@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { fmt, t } from "@/i18n";
+import { useT } from "@/components/LocaleProvider";
+import { fmt } from "@/i18n";
 import { btnPrimary, btnSecondary } from "./styles";
 
 /** Shows the private edit link. It is only ever available right now: we store just a hash. */
 export default function EditLinkCard({ token }: { token: string }) {
+  const t = useT();
   const [copied, setCopied] = useState(false);
   const path = `/edit/${token}`;
   const url = typeof window === "undefined" ? path : `${window.location.origin}${path}`;

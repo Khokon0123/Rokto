@@ -247,3 +247,18 @@ export const en = {
     geolocation_timeout: "Couldn't get your location in time. Please try again.",
   },
 } as const;
+
+// A Bangla translation (src/i18n/bn.ts) must carry every key `en` has, with the same nesting -
+// but Bangla strings obviously aren't the same literal values, so we can't reuse `typeof en`
+// directly. This maps every leaf string type to the general `string` type, keeping everything
+// else (object/array shape) identical, so bn.ts gets full autocomplete and a compile error on
+// any missing/extra/misspelled key, without demanding matching literals.
+type DeepStringify<T> = T extends string
+  ? string
+  : T extends readonly (infer U)[]
+    ? readonly DeepStringify<U>[]
+    : T extends object
+      ? { [K in keyof T]: DeepStringify<T[K]> }
+      : T;
+
+export type Messages = DeepStringify<typeof en>;

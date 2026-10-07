@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { errorMessage } from "@/i18n";
+import { useErrorMessage } from "@/components/LocaleProvider";
 import { getCurrentPosition, type GeoPoint } from "@/lib/geo";
 import { btnSecondary, errorTextClass, labelClass } from "./styles";
 
@@ -33,6 +33,7 @@ export default function LocationField({
   copy: LocationFieldCopy;
   disabled?: boolean;
 }) {
+  const errorMessage = useErrorMessage();
   const [status, setStatus] = useState<Status>("idle");
   const [errorCode, setErrorCode] = useState<string | null>(null);
 

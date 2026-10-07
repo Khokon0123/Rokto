@@ -1,15 +1,17 @@
-import { en } from "./en";
+import { bn } from "./bn";
+import { en, type Messages } from "./en";
+import type { Locale } from "./locale";
 
-// Future: pick the active language (en / bn) here. v1 ships English only.
-export const t = en;
+export type { Messages } from "./en";
+export { DEFAULT_LOCALE, LOCALE_COOKIE, isLocale, type Locale } from "./locale";
 
-/** Fills {placeholders}: fmt("Call {phone}", { phone: "017..." }) */
+export const messages: Record<Locale, Messages> = { en, bn };
+
 export function fmt(template: string, vars: Record<string, string | number>): string {
   return template.replace(/\{(\w+)\}/g, (_, key: string) => String(vars[key] ?? ""));
 }
 
-/** Maps an API / auth error code to user-facing copy. */
-export function errorMessage(code: string | undefined): string {
-  const errors = t.errors as Record<string, string>;
+export function getErrorMessage(locale: Locale, code: string | undefined): string {
+  const errors = messages[locale].errors as Record<string, string>;
   return (code && errors[code]) || errors.generic;
 }

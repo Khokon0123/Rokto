@@ -7,8 +7,8 @@ import BloodBadge from "@/components/BloodBadge";
 import LocationField from "@/components/LocationField";
 import OtpVerification from "@/components/OtpVerification";
 import Switch from "@/components/Switch";
+import { useErrorMessage, useT } from "@/components/LocaleProvider";
 import { btnPrimary, btnSecondary, cardClass, inputClass, labelClass } from "@/components/styles";
-import { errorMessage, t } from "@/i18n";
 import { apiCall } from "@/lib/api";
 import { formatLocalPhone, normalizeBdPhone } from "@/lib/phone";
 import type { EditableProfile } from "@/lib/types";
@@ -19,6 +19,8 @@ type Save = "idle" | "saving" | "saved";
 type Patch = Partial<Pick<EditableProfile, "available" | "lastDonated" | "area" | "location">>;
 
 export default function EditClient({ token }: { token: string }) {
+  const t = useT();
+  const errorMessage = useErrorMessage();
   const [load, setLoad] = useState<Load>("loading");
   const [profile, setProfile] = useState<EditableProfile | null>(null);
   const [save, setSave] = useState<Save>("idle");

@@ -1,11 +1,14 @@
+"use client";
+
 import Link from "next/link";
-import { t } from "@/i18n";
+import { useT } from "@/components/LocaleProvider";
 
 /**
  * Two quiet, secondary sections shown under the search on the homepage only.
  * Deliberately small and muted so the search card stays the primary focus.
  */
 export default function HomeInfo() {
+  const t = useT();
   const [register, ...others] = t.home.helpItems;
 
   return (

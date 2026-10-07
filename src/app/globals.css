@@ -15,7 +15,9 @@
   /* soft raised look for cards; a stronger one for the search card that sits over the hero band */
   --shadow-card: 0 1px 2px rgb(17 24 39 / 0.06), 0 8px 20px -6px rgb(17 24 39 / 0.12);
   --shadow-lift: 0 2px 4px rgb(17 24 39 / 0.06), 0 16px 36px -10px rgb(127 29 29 / 0.35);
-  --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Inter has no Bengali glyphs, so Bengali characters fall through to Anek Bangla - a modern,
+     legible Bengali UI typeface - within the same text run. No per-language font classes needed. */
+  --font-sans: var(--font-inter), var(--font-anek-bangla), system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 html {

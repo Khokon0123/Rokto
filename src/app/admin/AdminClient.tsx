@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import BloodBadge from "@/components/BloodBadge";
 import { btnPrimary, btnSecondary, cardClass, inputClass, labelClass } from "@/components/styles";
-import { errorMessage, fmt, t } from "@/i18n";
+import { useErrorMessage, useT } from "@/components/LocaleProvider";
+import { fmt } from "@/i18n";
 import { apiCall } from "@/lib/api";
 import { AREAS, getArea } from "@/lib/areas";
 import { BLOOD_GROUPS, type BloodGroup } from "@/lib/bloodGroups";
@@ -34,6 +35,8 @@ async function fetchDonors(): Promise<{ ok: boolean; donors?: AdminDonor[]; erro
 }
 
 export default function AdminClient() {
+  const t = useT();
+  const errorMessage = useErrorMessage();
   const [donors, setDonors] = useState<AdminDonor[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");

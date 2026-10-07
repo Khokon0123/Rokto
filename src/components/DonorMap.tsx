@@ -4,7 +4,8 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { useMemo } from "react";
 import { Circle, MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
-import { fmt, t } from "@/i18n";
+import { useT } from "@/components/LocaleProvider";
+import { fmt } from "@/i18n";
 import { getArea } from "@/lib/areas";
 import { formatDate } from "@/lib/donation";
 import { formatDistanceKm, type GeoPoint } from "@/lib/geo";
@@ -47,6 +48,7 @@ export default function DonorMap({
    * Donors outside it still show: the map itself is never area-restricted, only the list is. */
   area: string | null;
 }) {
+  const t = useT();
   const areaInfo = area ? getArea(area) : undefined;
   // Areas aren't surveyed boundaries, just approximate centers - this is a rough "roughly here"
   // ring, not a real border. Upazilas (district) cover far more ground than city thanas.

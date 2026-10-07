@@ -4,14 +4,16 @@ import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import EditLinkCard from "@/components/EditLinkCard";
 import OtpVerification from "@/components/OtpVerification";
+import { useErrorMessage, useT } from "@/components/LocaleProvider";
 import { btnPrimary, btnSecondary, errorTextClass, inputClass, labelClass } from "@/components/styles";
-import { errorMessage, t } from "@/i18n";
 import { apiCall } from "@/lib/api";
 import { normalizeBdPhone } from "@/lib/phone";
 
 type Step = "phone" | "otp" | "working" | "done";
 
 export default function RecoverPage() {
+  const t = useT();
+  const errorMessage = useErrorMessage();
   const [step, setStep] = useState<Step>("phone");
   const [phoneInput, setPhoneInput] = useState("");
   const [phone, setPhone] = useState<string | null>(null);

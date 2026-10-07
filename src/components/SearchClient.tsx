@@ -5,19 +5,24 @@ import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import AreaAutocomplete from "@/components/AreaAutocomplete";
 import DonorCard from "@/components/DonorCard";
+import { useErrorMessage, useT } from "@/components/LocaleProvider";
 import { btnPrimary, btnSecondary, cardClass, errorTextClass, inputClass, labelClass } from "@/components/styles";
-import { errorMessage, fmt, t } from "@/i18n";
+import { fmt } from "@/i18n";
 import { BLOOD_GROUPS, isBloodGroup, type BloodGroup } from "@/lib/bloodGroups";
 import { isFirebaseConfigured } from "@/lib/firebase/client";
 import { getCurrentPosition, type GeoPoint } from "@/lib/geo";
 import { searchDonors, sortByDistance, type SearchResult } from "@/lib/search";
 
+// Locale-less by design: this fallback is top-level (outside the component, so dynamic() only
+// ever loads the chunk once) and only shows for the brief moment the map code downloads - a
+// plain pulse skeleton needs no translated copy at all.
 const DonorMap = dynamic(() => import("@/components/DonorMap"), {
   ssr: false,
   loading: () => (
-    <p className="flex h-[70vh] max-h-[560px] items-center justify-center rounded-3xl border border-line bg-surface text-base text-muted">
-      {t.search.mapLoading}
-    </p>
+    <div
+      aria-hidden="true"
+      className="h-[70vh] max-h-[560px] w-full animate-pulse rounded-3xl border border-line bg-surface"
+    />
   ),
 });
 
@@ -28,6 +33,8 @@ interface Loaded {
 }
 
 export default function SearchClient() {
+  const t = useT();
+  const errorMessage = useErrorMessage();
   const [group, setGroup] = useState<BloodGroup | "">("");
   const [area, setArea] = useState<string | null>(null);
   const [includeCompatible, setIncludeCompatible] = useState(false);
