@@ -48,7 +48,10 @@ export default function SearchClient() {
   const [locating, setLocating] = useState(false);
   const [locateError, setLocateError] = useState<string | null>(null);
   const [view, setView] = useState<"list" | "map">("list");
-  const [searched, setSearched] = useState(false);
+  // Load the full list as soon as the page opens: someone arriving here usually needs blood now,
+  // and making them press a button first is friction at the worst possible moment. Changing a
+  // filter re-runs the query on its own; the button is just an explicit refresh.
+  const [searched, setSearched] = useState(true);
 
   function useMyLocation() {
     setLocating(true);
@@ -103,8 +106,7 @@ export default function SearchClient() {
 
   return (
     <div className="space-y-6">
-      {/* The page headline now lives in the red hero band (SiteHeader). Nothing is searched until
-          the button below is pressed - arriving here never dumps the whole donor list on screen. */}
+      {/* The page headline lives in the red hero band (SiteHeader). */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
