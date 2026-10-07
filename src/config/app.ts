@@ -3,13 +3,16 @@ export const APP_NAME = "Rokto";
 export const APP_NAME_BN = "রক্ত";
 
 /** The people/orgs behind the site, credited in the footer as "Powered by A & B ...".
- *  Give a url to link that name; leave it null for plain text. */
+ *  Give a url to link that name; leave it null for plain text.
+ *  logo: a path under /public. When set, the footer shows the logo instead of the name -
+ *  these marks already carry their own wordmark, so printing the name too would duplicate it. */
 export interface OrgCredit {
   name: string;
   url: string | null;
+  logo?: string;
 }
 export const ORGS: OrgCredit[] = [
-  { name: "Nandan", url: null },
+  { name: "Nandan", url: null, logo: "/orgs/nandan.png" },
   { name: "Green Education", url: null },
 ];
 
