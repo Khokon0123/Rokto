@@ -118,22 +118,37 @@ export async function sendOtpSms(phoneE164: string, code: string, ttlMinutes: nu
     if (senderId) url.searchParams.set("callerID", senderId);
 
     const redact = (text: string) => text.split(apiKey).join("***");
-    let result: { Status?: string | number; Success?: string | boolean; Message?: string } = {};
+    let raw = "";
+    let httpStatus = 0;
     try {
+      // 15s, not 10s: this gateway has been seen taking ~9s to answer.
       const res = await fetch(url, {
         method: "GET",
-        signal: AbortSignal.timeout(10_000),
+        signal: AbortSignal.timeout(15_000),
         cache: "no-store",
       });
-      result = (await res.json().catch(() => ({}))) as typeof result;
+      httpStatus = res.status;
+      raw = (await res.text()).trim();
     } catch (e) {
       console.error("Bulk SMS Dhaka request failed:", redact(e instanceof Error ? e.message : String(e)));
       throw new ApiError(502, "sms_failed");
     }
+
+    // Gateways in this market answer inconsistently: JSON ({"Status":"1000"}), a bare numeric
+    // code, or a sentence. Read the body as text and accept any of those rather than assuming
+    // one shape - and if it is a rejection, log the body verbatim so the reason is visible.
+    let code = raw;
+    try {
+      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      code = String(parsed.Status ?? parsed.status ?? parsed.code ?? parsed.response_code ?? raw);
+    } catch {
+      /* not JSON - fall back to the raw text */
+    }
     // 1000 = accepted. Others include 1005 (flagged as spam) and 2001 (no balance).
-    // Never log the code or the key.
-    if (String(result.Status) !== "1000") {
-      console.error("Bulk SMS Dhaka rejected the SMS, status:", result.Status, redact(String(result.Message ?? "")));
+    const accepted = /(^|\D)1000(\D|$)/.test(code) || /success/i.test(code);
+    if (!accepted) {
+      // Truncated and key-redacted; the OTP itself is never part of the response.
+      console.error(`Bulk SMS Dhaka rejected the SMS (HTTP ${httpStatus}):`, redact(raw.slice(0, 300)) || "(empty body)");
       throw new ApiError(502, "sms_failed");
     }
     return;
