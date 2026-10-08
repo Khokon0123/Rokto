@@ -16,16 +16,34 @@ export const ORGS: OrgCredit[] = [
   { name: "Green Education", url: null, logo: "/orgs/green-education.png" },
 ];
 
-/** Shown on /team. photo is a path under /public. */
-export interface TeamMember {
-  name: string;
-  role: string;
-  photo: string;
-}
-export const TEAM: TeamMember[] = [
-  { name: "Wasiful Karim Wasif", role: "Founder & Developer", photo: "/team/wasif.jpg" },
-  { name: "Khokon Barua", role: "Founder & Developer", photo: "/team/khokon.jpg" },
-];
+/** The starting team, copied into Firestore the first time /team or the admin Team tab loads.
+ *  After that, manage people from /admin -> Team; editing this list changes nothing. */
+export const DEFAULT_TEAM = [
+  {
+    name: "Wasiful Karim Wasif",
+    role: "Founder & Developer",
+    section: "founding",
+    photo: "/team/wasif.jpg",
+    email: "",
+    facebook: "",
+  },
+  {
+    name: "Khokon Barua",
+    role: "Founder & Developer",
+    section: "founding",
+    photo: "/team/khokon.jpg",
+    email: "",
+    facebook: "",
+  },
+  {
+    name: "Khokon Barua",
+    role: "Operations & Support",
+    section: "operations",
+    photo: "/team/khokon.jpg",
+    email: "baruakhokon01@gmail.com",
+    facebook: "https://www.facebook.com/khokon.barua.737",
+  },
+] as const;
 
 /** Donors who gave blood within this many days are listed below ready donors. */
 export const DONATION_COOLDOWN_DAYS = 90;

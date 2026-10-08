@@ -1,36 +1,19 @@
-"use client";
+import { DEFAULT_TEAM } from "@/config/app";
+import { listTeam } from "@/lib/server/team";
+import type { TeamMember } from "@/lib/team";
+import TeamClient from "./TeamClient";
 
-import Image from "next/image";
-import { useT } from "@/components/LocaleProvider";
-import { cardClass } from "@/components/styles";
-import { TEAM } from "@/config/app";
+// Always read fresh, so people added in /admin show up immediately.
+export const dynamic = "force-dynamic";
 
-// Same pattern as /register and /search: the page headline lives in the red hero band
-// (SiteHeader), so this content starts with a negative margin to sit under it.
-export default function TeamPage() {
-  const t = useT();
-  return (
-    <div className="relative -mt-14 space-y-5">
-      <div className={`${cardClass} space-y-5`}>
-        <p className="text-base text-muted">{t.team.intro}</p>
-        <ul className="space-y-4">
-          {TEAM.map((person) => (
-            <li key={person.name} className="flex items-center gap-4">
-              <Image
-                src={person.photo}
-                alt={person.name}
-                width={72}
-                height={72}
-                className="h-[72px] w-[72px] shrink-0 rounded-full object-cover"
-              />
-              <div className="min-w-0">
-                <p className="truncate text-lg font-bold text-ink">{person.name}</p>
-                <p className="text-base text-muted">{person.role}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
+export default async function TeamPage() {
+  let members: TeamMember[];
+  try {
+    members = await listTeam();
+  } catch (e) {
+    // Firestore unreachable or not configured (e.g. local dev without keys): show the starting team.
+    console.error(e);
+    members = DEFAULT_TEAM.map((m, i) => ({ ...m, id: `default-${i}`, order: i }));
+  }
+  return <TeamClient members={members} />;
 }

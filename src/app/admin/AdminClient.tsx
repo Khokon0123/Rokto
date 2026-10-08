@@ -11,6 +11,7 @@ import { AREAS, getArea } from "@/lib/areas";
 import { BLOOD_GROUPS, type BloodGroup } from "@/lib/bloodGroups";
 import { formatDate } from "@/lib/donation";
 import { formatLocalPhone } from "@/lib/phone";
+import TeamAdmin from "./TeamAdmin";
 
 interface AdminDonor {
   id: string;
@@ -46,6 +47,7 @@ export default function AdminClient() {
   const [area, setArea] = useState("");
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [tab, setTab] = useState<"donors" | "team">("donors");
 
   // A logged-in-but-expired session needs a full reload (not client-side routing) so the /admin
   // Server Component re-checks the cookie fresh; same reason the login page hard-navigates on success.
@@ -112,6 +114,27 @@ export default function AdminClient() {
         </button>
       </div>
 
+      <div role="tablist" className="flex gap-2 rounded-2xl bg-surface p-1 shadow-card">
+        {(["donors", "team"] as const).map((key) => (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={tab === key}
+            onClick={() => setTab(key)}
+            className={`min-h-11 flex-1 rounded-xl text-base font-semibold ${
+              tab === key ? "bg-accent text-white" : "text-ink hover:bg-page"
+            }`}
+          >
+            {key === "donors" ? t.admin.tabDonors : t.admin.tabTeam}
+          </button>
+        ))}
+      </div>
+
+      {tab === "team" ? (
+        <TeamAdmin onUnauthorized={goToLogin} />
+      ) : (
+      <>
       {error && (
         <p role="alert" className="rounded-2xl border border-accent bg-accent-soft p-4 font-medium text-accent-deep">
           {errorMessage(error)}
@@ -238,6 +261,8 @@ export default function AdminClient() {
           </ul>
           {filtered.length === 0 && <p className="text-base text-muted">{t.admin.noResults}</p>}
         </>
+      )}
+      </>
       )}
     </div>
   );

@@ -1,0 +1,129 @@
+"use client";
+
+import { useState } from "react";
+import { useT } from "@/components/LocaleProvider";
+import { cardClass } from "@/components/styles";
+import TeamAvatar from "@/components/TeamAvatar";
+import type { TeamMember } from "@/lib/team";
+
+// Same pattern as /register and /search: the page headline lives in the red hero band
+// (SiteHeader), so this content starts with a negative margin to sit under it.
+export default function TeamClient({ members }: { members: TeamMember[] }) {
+  const t = useT();
+  const founding = members.filter((m) => m.section === "founding");
+  const operations = members.filter((m) => m.section === "operations");
+
+  return (
+    <div className="relative -mt-14 space-y-5">
+      {founding.length > 0 && (
+        <section className={`${cardClass} space-y-5`}>
+          <p className="text-base text-muted">{t.team.intro}</p>
+          <h2 className="text-xl font-bold text-ink">{t.team.founding}</h2>
+          <ul className="space-y-4">
+            {founding.map((person) => (
+              <li key={person.id}>
+                <Person person={person} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {operations.length > 0 && (
+        <section className={`${cardClass} space-y-5`}>
+          <div className="space-y-1">
+            <h2 className="text-xl font-bold text-ink">{t.team.operations}</h2>
+            <p className="text-base text-muted">{t.team.operationsIntro}</p>
+          </div>
+          <ul className="space-y-4">
+            {operations.map((person) => (
+              <li key={person.id}>
+                <Person person={person} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function PersonRow({ person, hint }: { person: TeamMember; hint?: string }) {
+  return (
+    <div className="flex items-center gap-4">
+      <TeamAvatar name={person.name} photo={person.photo} />
+      <div className="min-w-0 flex-1 text-left">
+        <p className="truncate text-lg font-bold text-ink">{person.name}</p>
+        <p className="text-base text-muted">{person.role}</p>
+        {hint && <p className="mt-1 text-sm font-semibold text-accent">{hint}</p>}
+      </div>
+    </div>
+  );
+}
+
+// People with an email or Facebook link can be tapped to reveal them; everyone else is a plain row.
+function Person({ person }: { person: TeamMember }) {
+  const t = useT();
+  const [open, setOpen] = useState(false);
+  const { email, facebook } = person;
+  if (!email && !facebook) return <PersonRow person={person} />;
+  const panelId = `contact-${person.id}`;
+
+  return (
+    <div className="rounded-2xl border border-line">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-controls={panelId}
+        className="flex w-full items-center gap-2 rounded-2xl p-3 hover:bg-page"
+      >
+        <div className="min-w-0 flex-1">
+          <PersonRow person={person} hint={open ? t.team.hideContact : t.team.tapToContact} />
+        </div>
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 20 20"
+          className={`h-5 w-5 shrink-0 text-muted transition-transform ${open ? "rotate-180" : ""}`}
+        >
+          <path d="M5 7.5 10 12.5 15 7.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      {open && (
+        <div id={panelId} className="space-y-2 border-t border-line p-3">
+          {email && (
+            <a
+              href={`mailto:${email}?subject=${encodeURIComponent("Rokto - help / feedback")}`}
+              className="flex min-h-14 items-center gap-3 rounded-2xl bg-page px-4 hover:bg-line/40"
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-6 w-6 shrink-0 text-accent">
+                <path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h15A1.5 1.5 0 0 1 21 6.5v11a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5v-11Zm2 .9V17h14V7.4l-7 5-7-5Zm1.6-.4L12 10.8 17.4 7H6.6Z" fill="currentColor" />
+              </svg>
+              <span className="min-w-0">
+                <span className="block text-sm text-muted">{t.team.email}</span>
+                <span className="block break-all text-base font-semibold text-ink">{email}</span>
+              </span>
+            </a>
+          )}
+          {facebook && (
+            <a
+              href={facebook}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex min-h-14 items-center gap-3 rounded-2xl bg-page px-4 hover:bg-line/40"
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-6 w-6 shrink-0 text-[#1877F2]">
+                <path d="M24 12a12 12 0 1 0-13.9 11.9v-8.4H7.1V12h3V9.4c0-3 1.8-4.7 4.5-4.7 1.3 0 2.7.2 2.7.2v2.9h-1.5c-1.5 0-2 .9-2 1.9V12h3.4l-.5 3.5h-2.9v8.4A12 12 0 0 0 24 12Z" fill="currentColor" />
+              </svg>
+              <span className="min-w-0">
+                <span className="block text-sm text-muted">{t.team.facebook}</span>
+                <span className="block truncate text-base font-semibold text-ink">{person.name}</span>
+              </span>
+            </a>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
