@@ -12,8 +12,8 @@ export interface OrgCredit {
   logo?: string;
 }
 export const ORGS: OrgCredit[] = [
-  { name: "Nandan", url: null, logo: "/orgs/nandan.png" },
-  { name: "Green Education", url: null, logo: "/orgs/green-education.png" },
+  { name: "Nandan", url: "https://www.facebook.com/nandans.official", logo: "/orgs/nandan.png" },
+  { name: "Green Education", url: "https://www.facebook.com/profile.php?id=100092444718761", logo: "/orgs/green-education.png" },
 ];
 
 /** The starting team, copied into Firestore the first time /team or the admin Team tab loads.

@@ -6,7 +6,7 @@ import { ORGS } from "@/config/app";
 import { fmt } from "@/i18n";
 
 /**
- * "Nandan & Green Education" - each org links out if it has a url, joined with "&".
+ * "Nandan & Green Education" - each org (logo or name) links out if it has a url, joined with "&".
  * An org with a logo shows the mark instead of its name: these logos already contain
  * the name as artwork, so the text would just repeat it.
  */
@@ -17,13 +17,31 @@ function OrgCredit() {
         <span key={org.name} className="inline-flex items-center">
           {i > 0 && <span className="px-1.5">&amp;</span>}
           {org.logo ? (
-            <Image
-              src={org.logo}
-              alt={org.name}
-              width={128}
-              height={128}
-              className="h-16 w-16 rounded-full ring-2 ring-white/90"
-            />
+            (() => {
+              const logo = (
+                <Image
+                  src={org.logo}
+                  alt={org.name}
+                  width={128}
+                  height={128}
+                  className="h-16 w-16 rounded-full ring-2 ring-white/90"
+                />
+              );
+              return org.url ? (
+                <a
+                  href={org.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={org.name}
+                  title={org.name}
+                  className="rounded-full transition-transform hover:scale-105 focus-visible:outline-white"
+                >
+                  {logo}
+                </a>
+              ) : (
+                logo
+              );
+            })()
           ) : org.url ? (
             <a href={org.url} target="_blank" rel="noopener noreferrer" className="font-semibold underline">
               {org.name}
