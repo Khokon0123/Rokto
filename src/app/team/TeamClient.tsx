@@ -4,46 +4,64 @@ import { useState } from "react";
 import { useT } from "@/components/LocaleProvider";
 import { cardClass } from "@/components/styles";
 import TeamAvatar from "@/components/TeamAvatar";
-import type { TeamMember } from "@/lib/team";
+import { TEAM_SECTIONS, type TeamMember, type TeamSection } from "@/lib/team";
 
 // Same pattern as /register and /search: the page headline lives in the red hero band
 // (SiteHeader), so this content starts with a negative margin to sit under it.
 export default function TeamClient({ members }: { members: TeamMember[] }) {
   const t = useT();
-  const founding = members.filter((m) => m.section === "founding");
-  const operations = members.filter((m) => m.section === "operations");
+  const tabs = TEAM_SECTIONS.map((section) => ({
+    section,
+    label: section === "founding" ? t.team.founding : t.team.operations,
+    people: members.filter((m) => m.section === section),
+  })).filter((tab) => tab.people.length > 0);
+  const [active, setActive] = useState<TeamSection>(tabs[0]?.section ?? "founding");
+  const current = tabs.find((tab) => tab.section === active) ?? tabs[0];
 
   return (
     <div className="relative -mt-14 space-y-5">
-      {founding.length > 0 && (
-        <section className={`${cardClass} space-y-5`}>
-          <p className="text-base text-muted">{t.team.intro}</p>
-          <h2 className="text-xl font-bold text-ink">{t.team.founding}</h2>
-          <ul className="space-y-4">
-            {founding.map((person) => (
-              <li key={person.id}>
-                <Person person={person} />
-              </li>
+      <div className={`${cardClass} space-y-5`}>
+        {tabs.length > 1 && (
+          <div role="tablist" aria-label={t.hero.team} className="flex gap-1 rounded-2xl bg-page p-1">
+            {tabs.map((tab) => (
+              <button
+                key={tab.section}
+                id={`tab-${tab.section}`}
+                type="button"
+                role="tab"
+                aria-selected={tab.section === current?.section}
+                aria-controls={`panel-${tab.section}`}
+                onClick={() => setActive(tab.section)}
+                className={`min-h-12 flex-1 rounded-xl px-3 text-base font-semibold transition-colors ${
+                  tab.section === current?.section ? "bg-accent text-white shadow-sm" : "text-ink hover:bg-surface"
+                }`}
+              >
+                {tab.label}
+              </button>
             ))}
-          </ul>
-        </section>
-      )}
-
-      {operations.length > 0 && (
-        <section className={`${cardClass} space-y-5`}>
-          <div className="space-y-1">
-            <h2 className="text-xl font-bold text-ink">{t.team.operations}</h2>
-            <p className="text-base text-muted">{t.team.operationsIntro}</p>
           </div>
-          <ul className="space-y-4">
-            {operations.map((person) => (
-              <li key={person.id}>
-                <Person person={person} />
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+        )}
+
+        {current && (
+          <div
+            id={`panel-${current.section}`}
+            role="tabpanel"
+            aria-labelledby={`tab-${current.section}`}
+            className="space-y-5"
+          >
+            <p className="text-base text-muted">
+              {current.section === "operations" ? t.team.operationsIntro : t.team.intro}
+            </p>
+            <ul className="space-y-4">
+              {current.people.map((person) => (
+                <li key={person.id}>
+                  <Person person={person} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

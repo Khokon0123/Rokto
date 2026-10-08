@@ -79,8 +79,8 @@ export const en = {
   },
   team: {
     intro: "Rokto is built and run by:",
-    founding: "Founding team",
-    operations: "Operations team",
+    founding: "Founding Team",
+    operations: "Operations Team",
     operationsIntro: "Need help with the website, or have feedback? Reach out - tap a name to see how.",
     tapToContact: "Tap to contact",
     hideContact: "Hide contact",
