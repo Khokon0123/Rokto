@@ -12,6 +12,7 @@ export interface OrgCredit {
   logo?: string;
 }
 export const ORGS: OrgCredit[] = [
+  { name: "Sadhanananda International Buddhist Monastery", url: "https://www.sibmusa.org/", logo: "/orgs/sibm.png" },
   { name: "Nandan", url: "https://www.facebook.com/nandans.official", logo: "/orgs/nandan.png" },
   { name: "Green Education", url: "https://www.facebook.com/profile.php?id=100092444718761", logo: "/orgs/green-education.png" },
 ];

@@ -6,7 +6,7 @@ import { ORGS } from "@/config/app";
 import { fmt } from "@/i18n";
 
 /**
- * "Nandan & Green Education" - each org (logo or name) links out if it has a url, joined with "&".
+ * "A, B & C" - each org (logo or name) links out if it has a url.
  * An org with a logo shows the mark instead of its name: these logos already contain
  * the name as artwork, so the text would just repeat it.
  */
@@ -15,7 +15,10 @@ function OrgCredit() {
     <>
       {ORGS.map((org, i) => (
         <span key={org.name} className="inline-flex items-center">
-          {i > 0 && <span className="px-1.5">&amp;</span>}
+          {/* Two orgs read as "A & B"; three or more would become "A & B & C", so every join
+              but the last is a separator instead. A middle dot, not a comma: between two 64px
+              marks a comma hangs at the baseline and reads as a stray speck. */}
+          {i > 0 && <span className="px-1.5">{i === ORGS.length - 1 ? "\u0026" : "\u00b7"}</span>}
           {org.logo ? (
             (() => {
               const logo = (
