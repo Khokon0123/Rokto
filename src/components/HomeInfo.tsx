@@ -39,6 +39,21 @@ export default function HomeInfo() {
           ))}
         </ul>
       </section>
+
+      {/* Donors who lost their edit link used to have to find a grey link at the bottom of
+          /search to get a new one. Most never did, so their details went stale instead. */}
+      <section aria-labelledby="already-registered" className="border-l-2 border-accent/60 pl-4">
+        <h2 id="already-registered" className="text-sm font-semibold text-ink">
+          {t.home.registeredTitle}
+        </h2>
+        <p className="mt-2 max-w-prose text-sm leading-relaxed text-muted">{t.home.registeredBody}</p>
+        <Link
+          href="/recover"
+          className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-accent underline underline-offset-2"
+        >
+          {t.home.registeredCta}
+        </Link>
+      </section>
     </div>
   );
 }

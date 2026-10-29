@@ -45,6 +45,10 @@ export const en = {
         body: "Next time someone needs blood, share the Rokto search link so it reaches further than your own contacts.",
       },
     ],
+    registeredTitle: "Already registered?",
+    registeredBody:
+      "To change your area, your blood group, or the date you last donated, you need your private edit link. Lost it? Get a new one with your phone number.",
+    registeredCta: "Get a new edit link",
   },
   search: {
     heading: "Find a blood donor",

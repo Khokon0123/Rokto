@@ -1,6 +1,8 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useT } from "@/components/LocaleProvider";
 import { ORGS } from "@/config/app";
 import { fmt } from "@/i18n";
@@ -60,14 +62,28 @@ function OrgCredit() {
 
 export default function SiteFooter() {
   const t = useT();
+  const pathname = usePathname();
   const [before, after] = fmt(t.footer.poweredBy, { org: "\u0000" }).split("\u0000");
+  // Every page except the one it points at. The header is already full on a 360px phone
+  // (Team, Register, language), so this is the only place it fits site-wide.
+  const showRecover = pathname !== "/recover";
 
   return (
     // Mirrors the header band: same red, same 2rem curve, so the page is bookended.
     <footer className="rounded-t-[2rem] bg-gradient-to-b from-accent to-accent-dark text-white">
       {/* flex-wrap, not a plain <p>: the logo is taller than the line, so the credit needs to
           sit on a baseline-free centred row that can wrap on narrow phones. */}
-      <div className="mx-auto flex w-full max-w-2xl flex-wrap items-center justify-center gap-x-1.5 gap-y-1 px-4 py-5 text-center text-sm text-white/90">
+      {showRecover && (
+        <div className="mx-auto w-full max-w-2xl px-4 pt-4 text-center">
+          <Link
+            href="/recover"
+            className="inline-flex min-h-11 items-center text-sm text-white/85 underline underline-offset-2 hover:text-white focus-visible:outline-white"
+          >
+            {t.nav.recover}
+          </Link>
+        </div>
+      )}
+      <div className="mx-auto flex w-full max-w-2xl flex-wrap items-center justify-center gap-x-1.5 gap-y-1 px-4 pb-5 pt-3 text-center text-sm text-white/90">
         {before && <span>{before}</span>}
         <OrgCredit />
         {after && <span>{after}</span>}
