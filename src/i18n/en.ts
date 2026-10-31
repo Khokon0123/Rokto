@@ -29,16 +29,16 @@ export const en = {
     },
     whyTitle: "Why Rokto exists",
     whyBody:
-      "When someone in Chittagong urgently needs blood, finding a willing, compatible donor nearby often comes down to luck \u2014 a scattered Facebook post, or a friend who knows a friend. The donors are already here. Rokto just makes them findable \u2014 a simple, always-open directory so help is a search away, not a scramble.",
+      "When someone in Chittagong urgently needs blood, finding a willing, compatible donor nearby often comes down to luck: a scattered Facebook post, or a friend who knows a friend. The donors are already here. Rokto just makes them findable, with a simple, always-open directory so help is a search away, not a scramble.",
     helpTitle: "How you can help",
     helpItems: [
       {
         title: "Register as a donor",
-        body: "If you're eligible, add your profile \u2014 it takes about a minute.",
+        body: "If you're eligible, add your profile. It takes about a minute.",
       },
       {
         title: "Share Rokto with your community",
-        body: "Mosque groups, college classes, workplace chats, family groups \u2014 the more people who know about it, the more useful it becomes.",
+        body: "Mosque groups, college classes, workplace chats, family groups. The more people who know about it, the more useful it becomes.",
       },
       {
         title: "Pass along the link, not just a post",
@@ -129,7 +129,7 @@ export const en = {
     location: {
       label: "Share your exact location (optional)",
       intro:
-        "Optional. If you add this, an approximate location — not your exact house — will show publicly on your profile, in addition to your area.",
+        "Optional. If you add this, an approximate location (not your exact house) will show publicly on your profile, in addition to your area.",
       action: "Use my current location",
       locating: "Getting your location...",
       added: "Location added",
@@ -180,7 +180,7 @@ export const en = {
     location: {
       label: "Exact location (optional)",
       intro:
-        "Optional. If you add this, an approximate location — not your exact house — shows publicly on your profile, in addition to your area.",
+        "Optional. If you add this, an approximate location (not your exact house) shows publicly on your profile, in addition to your area.",
       action: "Use my current location",
       locating: "Getting your location...",
       added: "Location shared",
@@ -291,7 +291,7 @@ export const en = {
     captcha_failed: "Couldn't confirm you're not a robot. Please try again.",
     location_invalid: "That location doesn't look like it's in Chittagong District. Please try again.",
     geolocation_unsupported: "Your browser doesn't support sharing your location.",
-    geolocation_denied: "Location access was declined. You can allow it in your browser settings, or skip this — it's optional.",
+    geolocation_denied: "Location access was declined. You can allow it in your browser settings, or skip this. It's optional.",
     geolocation_timeout: "Couldn't get your location in time. Please try again.",
   },
 } as const;
