@@ -1,47 +1,47 @@
 import "server-only";
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { ADMIN_SESSION_TTL_SECONDS } from "@/config/app";
+import { isProduction } from "./env";
 import { ApiError } from "./http";
 
-// One shared admin, one shared password (ADMIN_PASSWORD env var) - no accounts, nothing stored in
-// Firestore. A correct password gets a signed, short-lived-ish session token in an httpOnly cookie;
-// nothing else about "being logged in" is tracked anywhere.
+// One shared admin password (owner decision #6: per-person accounts are the long-term option).
+// A correct password gets a signed session in an httpOnly cookie. S7: the signature covers
+//   - ADMIN_SESSION_SECRET (its own secret, not the OTP one),
+//   - a hash of the CURRENT password, and
+//   - ADMIN_SESSION_VERSION,
+// so changing the password, or bumping the version, logs out every session everywhere.
 export const ADMIN_COOKIE = "rokto_admin";
 
 function secret(): string {
-  // Reuses the same signing secret phone-OTP proofs already require, so there's no extra secret
-  // to generate and keep safe. Domain-separated below (the "admin:" / "pw:" prefixes) so an admin
-  // token can never be confused with (or forged from) an OTP proof.
-  const s = process.env.OTP_SECRET;
+  const s = process.env.ADMIN_SESSION_SECRET;
   if (s && s.length >= 32) return s;
-  if (process.env.NODE_ENV !== "production") return "dev-only-secret-dev-only-secret-dev-only";
+  if (!isProduction()) return "dev-only-admin-secret-dev-only-admin-secret";
   throw new ApiError(503, "server_error");
 }
 
 const hmac = (data: string) => createHmac("sha256", secret()).update(data).digest();
 const b64 = (buf: Buffer) => buf.toString("base64url");
+const safeEqual = (a: Buffer, b: Buffer) => a.length === b.length && timingSafeEqual(a, b);
 
-function safeEqual(a: Buffer, b: Buffer): boolean {
-  return a.length === b.length && timingSafeEqual(a, b);
+function binding(): string {
+  const pw = process.env.ADMIN_PASSWORD ?? "";
+  const version = process.env.ADMIN_SESSION_VERSION ?? "1";
+  return `${createHash("sha256").update(pw).digest("hex")}:${version}`;
 }
 
-/**
- * Constant-time password check. Comparing HMACs (not the raw strings) means the two inputs can be
- * different lengths without leaking that fact through timing, and the real password is never held
- * next to user input in a plain string compare.
- */
+const minPasswordLength = () => (isProduction() ? 16 : 8);
+
+/** Constant-time password check (HMACs compared, so lengths don't leak through timing). */
 export function checkAdminPassword(input: unknown): boolean {
   const password = process.env.ADMIN_PASSWORD;
-  if (!password || password.length < 8) return false; // refuse to run with a missing/weak password
-  if (typeof input !== "string" || input.length === 0) return false;
+  if (!password || password.length < minPasswordLength()) return false;
+  if (typeof input !== "string" || input.length === 0 || input.length > 512) return false;
   return safeEqual(hmac(`pw:${input}`), hmac(`pw:${password}`));
 }
 
-export function signAdminSession(): string {
-  const payload = b64(
-    Buffer.from(JSON.stringify({ role: "admin", exp: Date.now() + ADMIN_SESSION_TTL_SECONDS * 1000 })),
-  );
-  return `${payload}.${b64(hmac(`admin:${payload}`))}`;
+export function signAdminSession(now = Date.now()): string {
+  const payload = b64(Buffer.from(JSON.stringify({ role: "admin", exp: now + ADMIN_SESSION_TTL_SECONDS * 1000 })));
+  return `${payload}.${b64(hmac(`admin:${payload}:${binding()}`))}`;
 }
 
 export function isValidAdminSession(token: string | undefined): boolean {
@@ -49,18 +49,20 @@ export function isValidAdminSession(token: string | undefined): boolean {
   const [payload, sig] = token.split(".");
   if (!payload || !sig) return false;
   try {
-    if (!safeEqual(hmac(`admin:${payload}`), Buffer.from(sig, "base64url"))) return false;
-    const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as {
-      role?: string;
-      exp?: number;
-    };
+    if (!safeEqual(hmac(`admin:${payload}:${binding()}`), Buffer.from(sig, "base64url"))) return false;
+    const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as { role?: string; exp?: number };
     return data.role === "admin" && !!data.exp && Date.now() <= data.exp;
   } catch {
     return false;
   }
 }
 
-/** Throws 401 if the request's admin cookie is missing, forged or expired. */
+/** Cookie attributes used for BOTH login and logout, so logout always replaces the right cookie. */
+export function adminCookieOptions(maxAge: number) {
+  return { httpOnly: true, secure: isProduction(), sameSite: "strict" as const, path: "/", maxAge };
+}
+
+/** Throws 401 if the request's admin cookie is missing, forged, expired or revoked. */
 export function requireAdmin(req: Request): void {
   const cookie = req.headers.get("cookie") ?? "";
   const match = cookie.match(new RegExp(`(?:^|;\\s*)${ADMIN_COOKIE}=([^;]+)`));

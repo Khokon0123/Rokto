@@ -2,20 +2,14 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Public donor directory: anyone can search (read), nobody can write from a browser.
-    // Every create/update/delete happens in the Next.js API routes via the Admin SDK
-    // (which bypasses these rules) after checking OTP verification or the private edit token.
-    match /donors/{donorId} {
-      allow read: if true;
-      allow write: if false;
-    }
-
-    // Holds SHA-256 hashes of edit tokens. Never readable or writable from a client.
-    // (otpChallenges and rateLimits are also private; the catch-all below denies them.)
-    match /donorSecrets/{donorId} {
-      allow read, write: if false;
-    }
-
+    // S2: browsers can't read or write ANY document. Search is served by the Next.js server
+    // (/api/search, from a cache) and phone numbers are revealed one at a time by
+    // /api/donors/:id/contact. Every read and write goes through the API routes via the Admin SDK,
+    // which bypasses these rules after checking OTP proofs, edit tokens or the admin session.
+    //
+    // Private collections, all covered by the catch-all below:
+    //   donors, donorSecrets (edit-token hashes), phoneIndex (one profile per phone),
+    //   blockedPhones, otpChallenges, usedProofs, rateLimits, reports, adminAudit, team, meta.
     match /{document=**} {
       allow read, write: if false;
     }

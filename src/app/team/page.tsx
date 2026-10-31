@@ -1,19 +1,20 @@
-import { DEFAULT_TEAM } from "@/config/app";
-import { listTeam } from "@/lib/server/team";
+import { listTeamCached } from "@/lib/server/team";
+import { logError } from "@/lib/server/log";
 import type { TeamMember } from "@/lib/team";
 import TeamClient from "./TeamClient";
 
-// Always read fresh, so people added in /admin show up immediately.
-export const dynamic = "force-dynamic";
+// D7: cached (5 min) and refreshed instantly whenever the admin panel changes the team, instead of
+// a Firestore transaction on every page view.
+export const revalidate = 300;
 
 export default async function TeamPage() {
-  let members: TeamMember[];
+  let members: TeamMember[] | null;
   try {
-    members = await listTeam();
+    members = await listTeamCached();
   } catch (e) {
-    // Firestore unreachable or not configured (e.g. local dev without keys): show the starting team.
-    console.error(e);
-    members = DEFAULT_TEAM.map((m, i) => ({ ...m, id: `default-${i}`, order: i }));
+    // Don't paper over an outage with stale hard-coded defaults: log it, say so on the page.
+    logError("team_load_failed", e);
+    members = null;
   }
   return <TeamClient members={members} />;
 }

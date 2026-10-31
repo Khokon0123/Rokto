@@ -3,11 +3,11 @@ import { isBloodGroup } from "@/lib/bloodGroups";
 import { isValidGeoPoint, type GeoPoint } from "@/lib/geo";
 import { cleanName, parseDateOnly } from "@/lib/validation";
 import { ApiError, handle, json, readJson } from "@/lib/server/http";
-import { verifyPhoneProof } from "@/lib/server/otp";
-import { upsertDonorByPhone } from "@/lib/server/donors";
+import { registerDonor } from "@/lib/server/donors";
 
 // POST /api/donors - register (or, if this phone already has a profile, refresh it).
-// Requires a fresh phone-verification proof (from /api/otp/verify); the phone comes from the proof.
+// Needs a "register" proof from /api/otp/verify; the phone comes from the proof. A retry with the
+// same proof (e.g. after a network error) is accepted while it's valid, without another SMS (F9).
 export function POST(req: Request) {
   return handle(async () => {
     const body = await readJson(req);
@@ -31,8 +31,7 @@ export function POST(req: Request) {
       location = body.location;
     }
 
-    const { phone } = verifyPhoneProof(body.proof);
-    const result = await upsertDonorByPhone(phone, {
+    const result = await registerDonor(body.proof, {
       name,
       bloodGroup: body.bloodGroup,
       area: body.area,

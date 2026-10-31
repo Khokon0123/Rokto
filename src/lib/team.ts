@@ -9,7 +9,8 @@ export interface TeamMember {
   name: string;
   role: string;
   section: TeamSection;
-  /** A /public path (e.g. "/team/khokon.jpg") or a small JPEG data URL uploaded from the admin panel. Empty = initials. */
+  /** A /public path (e.g. "/team/khokon.jpg"), or for uploads the /api/team/:id/photo URL that serves
+   *  it (the stored value is a small JPEG data URL). Empty = initials. */
   photo: string;
   email: string;
   facebook: string;
@@ -22,10 +23,18 @@ export type TeamMemberInput = Omit<TeamMember, "id" | "order">;
 export const TEAM_PHOTO_SIZE = 256;
 /** Hard cap on a stored photo (a 256px JPEG is ~20-40 KB; this leaves plenty of room). */
 export const TEAM_PHOTO_MAX_CHARS = 300_000;
+/** Request body cap for team add/edit (photo + fields), see S10. */
+export const TEAM_BODY_LIMIT = 400 * 1024;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PUBLIC_PHOTO_RE = /^\/team\/[\w.-]+\.(jpe?g|png|webp)$/i;
 const DATA_PHOTO_RE = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
+const SERVED_PHOTO_RE = /^\/api\/team\/[A-Za-z0-9]{1,40}\/photo(\?v=[a-f0-9]{1,16})?$/;
+
+/** An already-uploaded photo, as the server hands it out. Sent back unchanged = "keep the photo". */
+export function isServedPhoto(photo: string): boolean {
+  return SERVED_PHOTO_RE.test(photo);
+}
 
 export function isFacebookUrl(value: string): boolean {
   try {
@@ -54,7 +63,7 @@ export function validateTeamMember(body: Record<string, unknown>): { fields: Tea
   if (name.length < 2 || name.length > 80) return { error: "team_name_invalid" };
   if (role.length < 2 || role.length > 80) return { error: "team_role_invalid" };
   if (!TEAM_SECTIONS.includes(section)) return { error: "bad_request" };
-  if (photo && !(PUBLIC_PHOTO_RE.test(photo) || (DATA_PHOTO_RE.test(photo) && photo.length <= TEAM_PHOTO_MAX_CHARS))) {
+  if (photo && !(PUBLIC_PHOTO_RE.test(photo) || isServedPhoto(photo) || (DATA_PHOTO_RE.test(photo) && photo.length <= TEAM_PHOTO_MAX_CHARS))) {
     return { error: "team_photo_invalid" };
   }
   if (email && (email.length > 120 || !EMAIL_RE.test(email))) return { error: "team_email_invalid" };

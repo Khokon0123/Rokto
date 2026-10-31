@@ -11,6 +11,8 @@ export default function TeamAvatar({ name, photo, size = 72 }: { name: string; p
         width={size}
         height={size}
         style={style}
+        // Uploaded photos come from /api/team/:id/photo (already small) or are a local preview.
+        unoptimized={photo.startsWith("/api/") || photo.startsWith("data:")}
         className="shrink-0 rounded-full object-cover"
       />
     );

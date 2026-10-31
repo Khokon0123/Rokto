@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/server/metadata";
 
-// Carries the page <title> for /team.
-export const metadata: Metadata = {
-  title: "Team",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata("team");
+}
 
 export default function TeamLayout({ children }: { children: React.ReactNode }) {
   return children;

@@ -18,6 +18,9 @@ async function resizePhoto(file: File): Promise<string> {
   canvas.height = TEAM_PHOTO_SIZE;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("no canvas");
+  // JPEG has no transparency: paint white first, or transparent PNGs turn black (F12).
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, TEAM_PHOTO_SIZE, TEAM_PHOTO_SIZE);
   ctx.drawImage(
     bitmap,
     (bitmap.width - side) / 2,
@@ -36,24 +39,25 @@ async function resizePhoto(file: File): Promise<string> {
 interface TeamResult {
   ok: boolean;
   members?: TeamMember[];
+  seeded?: boolean;
   error?: string;
 }
 
 async function fetchTeam(): Promise<TeamResult> {
-  try {
-    const res = await fetch("/api/admin/team", { cache: "no-store" });
-    const data = (await res.json().catch(() => ({}))) as { members?: TeamMember[]; error?: string };
-    if (!res.ok) return { ok: false, error: data.error ?? "server_error" };
-    return { ok: true, members: data.members ?? [] };
-  } catch {
-    return { ok: false, error: "network" };
-  }
+  const res = await apiCall<{ members: TeamMember[]; seeded: boolean }>("/api/admin/team", "GET");
+  return res.ok && res.data
+    ? { ok: true, members: res.data.members, seeded: res.data.seeded }
+    : { ok: false, error: res.error ?? "server_error" };
 }
+
+const smooth = (): ScrollBehavior =>
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"; // A3
 
 export default function TeamAdmin({ onUnauthorized }: { onUnauthorized: () => void }) {
   const t = useT();
   const errorMessage = useErrorMessage();
   const [members, setMembers] = useState<TeamMember[] | null>(null);
+  const [seeded, setSeeded] = useState(true);
   const [error, setError] = useState<string | null>(null);
   // null = form closed, "new" = adding, otherwise the id being edited
   const [editing, setEditing] = useState<string | null>(null);
@@ -66,7 +70,11 @@ export default function TeamAdmin({ onUnauthorized }: { onUnauthorized: () => vo
   const formRef = useRef<HTMLFormElement>(null);
 
   function apply(res: TeamResult): void {
-    if (res.ok) setMembers(res.members ?? []);
+    if (res.ok) {
+      setMembers(res.members ?? []);
+      setSeeded(res.seeded !== false);
+      setError(null); // F12: a later success clears an earlier error
+    }
     else if (res.error === "admin_unauthorized") onUnauthorized();
     else setError(res.error ?? "generic");
   }
@@ -99,7 +107,7 @@ export default function TeamAdmin({ onUnauthorized }: { onUnauthorized: () => vo
         ? { name: member.name, role: member.role, section: member.section, photo: member.photo, email: member.email, facebook: member.facebook }
         : { ...EMPTY_FORM, section: section ?? "founding" },
     );
-    requestAnimationFrame(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    requestAnimationFrame(() => formRef.current?.scrollIntoView({ behavior: smooth(), block: "start" }));
   }
 
   async function pickPhoto(file: File | undefined) {
@@ -124,6 +132,7 @@ export default function TeamAdmin({ onUnauthorized }: { onUnauthorized: () => vo
     setSaving(false);
     if (!res.ok) return handleError(res.error, setFormError);
     setEditing(null);
+    setError(null);
     await load();
   }
 
@@ -141,7 +150,16 @@ export default function TeamAdmin({ onUnauthorized }: { onUnauthorized: () => vo
     setBusyId(null);
     setConfirmingId(null);
     if (!res.ok) return handleError(res.error, setError);
+    setError(null);
     setMembers((prev) => (prev ? prev.filter((m) => m.id !== id) : prev));
+  }
+
+  async function seed() {
+    setBusyId("seed");
+    const res = await apiCall("/api/admin/team/seed", "POST", {});
+    setBusyId(null);
+    if (!res.ok) return handleError(res.error, setError);
+    await load();
   }
 
   const sectionLabel = (s: TeamSection) => (s === "founding" ? t.team.founding : t.team.operations);
@@ -161,6 +179,15 @@ export default function TeamAdmin({ onUnauthorized }: { onUnauthorized: () => vo
         <p role="alert" className="rounded-2xl border border-accent bg-accent-soft p-4 font-medium text-accent-deep">
           {errorMessage(error)}
         </p>
+      )}
+
+      {!seeded && members?.length === 0 && (
+        <div className={`${cardClass} space-y-3`}>
+          <p className="text-base text-ink">{t.admin.teamSeedHint}</p>
+          <button type="button" disabled={busyId === "seed"} onClick={() => void seed()} className={`${btnPrimary} min-h-11 px-4`}>
+            {t.admin.teamSeed}
+          </button>
+        </div>
       )}
 
       {editing && (

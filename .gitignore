@@ -45,3 +45,13 @@ next-env.d.ts
 
 # scratch from an interrupted install; safe to delete
 /_to_delete/
+
+# local tool output (H6)
+/.claude/
+/output/
+/.playwright-cli/
+/playwright-report/
+/test-results/
+*.log
+firebase-debug.log
+firestore-debug.log

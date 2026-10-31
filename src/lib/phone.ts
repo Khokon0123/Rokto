@@ -1,13 +1,12 @@
 import { PHONE_COUNTRY_CODE } from "@/config/app";
-
-const BN_DIGITS = "০১২৩৪৫৬৭৮৯";
+import { toLatinDigits } from "./digits";
 
 /**
  * Accepts 01XXXXXXXXX, 8801XXXXXXXXX or +8801XXXXXXXXX (Latin or Bengali digits)
  * and returns E.164 (+8801XXXXXXXXX), or null if it is not a valid BD mobile number.
  */
 export function normalizeBdPhone(input: string): string | null {
-  const latin = input.replace(/[০-৯]/g, (d) => String(BN_DIGITS.indexOf(d)));
+  const latin = toLatinDigits(input);
   const cleaned = latin.replace(/[\s\-().]/g, "");
   const m = cleaned.match(/^(?:\+?880|0)?(1[3-9]\d{8})$/);
   return m ? `${PHONE_COUNTRY_CODE}${m[1]}` : null;

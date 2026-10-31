@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { getErrorMessage, messages, type Locale, type Messages } from "@/i18n";
 import { LOCALE_COOKIE } from "@/i18n/locale";
@@ -21,9 +22,12 @@ const LocaleContext = createContext<LocaleContextValue | null>(null);
  */
 export function LocaleProvider({ initialLocale, children }: { initialLocale: Locale; children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(initialLocale);
+  const router = useRouter();
 
   const setLocale = useCallback((next: Locale) => {
     setLocaleState(next);
+    // E3: screen readers, fonts and hyphenation read <html lang>, so keep it in step.
+    document.documentElement.lang = next;
     try {
       // 1 year, readable on every path - next request's Server Components (layout) pick this up
       // so the correct language renders on first paint instead of flashing the old one.
@@ -31,7 +35,9 @@ export function LocaleProvider({ initialLocale, children }: { initialLocale: Loc
     } catch {
       /* cookies blocked: the toggle still works for this visit, it just won't persist */
     }
-  }, []);
+    // Server-rendered bits (page <title>, metadata) re-render in the new language.
+    router.refresh();
+  }, [router]);
 
   const value = useMemo<LocaleContextValue>(
     () => ({

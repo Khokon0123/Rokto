@@ -46,14 +46,43 @@ export const DEFAULT_TEAM = [
   },
 ] as const;
 
-/** Donors who gave blood within this many days are listed below ready donors. */
+/** Donors who gave blood within this many days are listed below ready donors.
+ *  PENDING OWNER + MEDICAL DECISION #7 (L3): one interval for everyone today. */
 export const DONATION_COOLDOWN_DAYS = 90;
+
+/** Bangladesh time. "Today", the SMS daily cap and date pickers all use this, not UTC (F11, D6). */
+export const APP_TIME_ZONE = "Asia/Dhaka";
+
+/** Where data / abuse requests go. PENDING OWNER: replace with a role mailbox (L1, L4). */
+export const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "support@roktoctg.com";
 
 /** Seconds before the OTP "resend" button becomes active. */
 export const OTP_RESEND_SECONDS = 30;
 
-/** Max donors fetched per search in v1 (future: pagination / "load more"). */
-export const SEARCH_LIMIT = 200;
+/** Most donors one search can return (sorted best-first BEFORE this cut, see F5).
+ *  The list renders SEARCH_PAGE_SIZE at a time with "Show more". */
+export const SEARCH_LIMIT = 500;
+export const SEARCH_PAGE_SIZE = 30;
+
+/** How long the server keeps the public directory cached (S4: Firestore reads scale with this,
+ *  not with visitors). Any donor write clears it immediately. */
+export const SEARCH_CACHE_SECONDS = 300;
+
+/**
+ * PENDING OWNER DECISION #1 (audit section 8): how phone numbers are shown.
+ *   "tap"    - (recommended) search never returns phones; each "Show number" tap asks the server for
+ *              one number, behind CAPTCHA + rate limits, so the directory can't be scraped in bulk.
+ *   "public" - search returns phones directly (old behaviour, still never in bulk from the browser).
+ */
+export const PHONE_REVEAL_MODE: "tap" | "public" = "tap";
+/** After one CAPTCHA, further reveals from the same visitor ride on a short signed pass. */
+export const REVEAL_PASS_TTL_SECONDS = 15 * 60;
+export const REVEAL_MAX_PER_IP_PER_HOUR = 40;
+export const REVEAL_MAX_PER_IP_PER_DAY = 120;
+
+/** PENDING OWNER DECISION #5: public location precision. Locations are snapped to this grid
+ *  (same home -> same public point, every time; S5). */
+export const LOCATION_GRID_METERS = 500;
 
 /** v1 accepts Bangladeshi mobile numbers only (cuts SMS-pumping abuse). */
 export const PHONE_COUNTRY_CODE = "+880";
@@ -69,11 +98,31 @@ export const OTP_PROOF_TTL_SECONDS = 600;
 export const OTP_RESEND_COOLDOWN_SECONDS = 30; // min gap between codes to one number
 export const OTP_MAX_PER_PHONE_PER_HOUR = 5;
 export const OTP_MAX_PER_IP_PER_HOUR = 10;
-export const OTP_DEFAULT_DAILY_CAP = 300; // overall texts/day; override with OTP_DAILY_CAP
+export const OTP_MAX_PER_IP_PER_DAY = 20; // S3
+export const OTP_MAX_PER_SUBNET_PER_DAY = 60; // S3: one /24 (IPv4) or /48 (IPv6)
+export const OTP_DEFAULT_DAILY_CAP = 300; // overall texts/day; override with OTP_DAILY_CAP (0 = stop all)
+/** Share of the daily cap kept for /recover so registration spam can't starve it (and vice versa). */
+export const OTP_RECOVER_SHARE = 0.3;
+/** Wrong codes allowed per phone per day, across resends (S13). */
+export const OTP_MAX_FAILED_PER_PHONE_PER_DAY = 15;
+/** A recover proof may be retried this many times (idempotent retry, S11), never more. */
+export const PROOF_MAX_USES = 3;
 
-/** How long an admin login session lasts before needing the password again. */
-export const ADMIN_SESSION_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
+/** How long an admin login session lasts before needing the password again (S7). */
+export const ADMIN_SESSION_TTL_SECONDS = 60 * 60 * 12; // 12 hours
 
 /** Brute-force guard on /api/admin/login (per IP). */
 export const ADMIN_LOGIN_MAX_ATTEMPTS = 8;
 export const ADMIN_LOGIN_WINDOW_SECONDS = 900; // 15 minutes
+
+/** PENDING OWNER DECISION #4 (F10): donors may correct their own name and blood group from the
+ *  edit page (blood group behind a confirm step). false = re-register with the same number instead. */
+export const ALLOW_PROFILE_CORRECTIONS = true;
+
+/** Abuse reports (L2): per-IP limits on the public "Report this listing" form. */
+export const REPORT_MAX_PER_IP_PER_DAY = 10;
+export const REPORT_REASONS = ["wrong_number", "not_registered", "harassment", "other"] as const;
+export type ReportReason = (typeof REPORT_REASONS)[number];
+
+/** Admin donor list page size (H7). */
+export const ADMIN_PAGE_SIZE = 50;

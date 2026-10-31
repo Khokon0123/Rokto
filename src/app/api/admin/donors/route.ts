@@ -1,18 +1,19 @@
 import { requireAdmin } from "@/lib/server/adminAuth";
-import { listAllDonors } from "@/lib/server/donors";
+import { listDonorsPage } from "@/lib/server/adminDonors";
 import { handle, json } from "@/lib/server/http";
 
-// GET /api/admin/donors - every donor, every field, no availability/limit filtering. Admin-only.
+// GET /api/admin/donors?group=&area=&phone=&cursor= - one page, newest first (H7). Admin-only.
 export function GET(req: Request) {
   return handle(async () => {
     requireAdmin(req);
-    const donors = await listAllDonors();
-    return json({
-      donors: donors.map((d) => ({
-        ...d,
-        lastDonated: d.lastDonated ? d.lastDonated.toISOString().slice(0, 10) : null,
-        createdAt: d.createdAt ? d.createdAt.toISOString() : null,
-      })),
-    });
+    const q = new URL(req.url).searchParams;
+    return json(
+      await listDonorsPage({
+        bloodGroup: q.get("group") ?? undefined,
+        area: q.get("area") ?? undefined,
+        phone: q.get("phone") ?? undefined,
+        cursor: q.get("cursor") ?? undefined,
+      }),
+    );
   });
 }

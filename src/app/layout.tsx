@@ -1,12 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { Anek_Bangla, Inter } from "next/font/google";
-import { cookies } from "next/headers";
 import "./globals.css";
 import { LocaleProvider } from "@/components/LocaleProvider";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { APP_NAME } from "@/config/app";
-import { DEFAULT_LOCALE, isLocale, LOCALE_COOKIE } from "@/i18n/locale";
+import { SITE_URL } from "@/config/site";
+import { messages } from "@/i18n";
+import { requestLocale } from "@/lib/server/metadata";
 
 // Inter: a clean, high-legibility grotesque in the same family as Uber's own typeface (Uber Move) -
 // free, and built specifically for UI text at small sizes, which is most of this app.
@@ -16,11 +17,8 @@ const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 // Latin text keeps rendering in Inter.
 const anekBangla = Anek_Bangla({ variable: "--font-anek-bangla", weight: "variable", subsets: ["bengali"] });
 
-// Absolute base for every generated URL. Without it Next emits relative og:image paths,
-// which Facebook, Messenger and WhatsApp all reject - and with no og:image at all they fall
-// back to scraping whatever picture is on the page, which is how a partner logo in the
-// footer ended up as the link preview.
-const SITE_URL = "https://www.roktoctg.com";
+// Absolute base for every generated URL (SITE_URL, from NEXT_PUBLIC_SITE_URL). Without it Next
+// emits relative og:image paths, which Facebook, Messenger and WhatsApp all reject.
 
 // The share card is written in Bangla: the people forwarding this link are forwarding it to
 // Bangla speakers in Chittagong. The <title> stays English so search results and browser
@@ -29,10 +27,14 @@ const OG_TITLE = "\u099a\u099f\u09cd\u099f\u0997\u09cd\u09b0\u09be\u09ae\u09c7 \
 const OG_DESC =
   "\u09b0\u0995\u09cd\u09a4\u09c7\u09b0 \u0997\u09cd\u09b0\u09c1\u09aa \u0993 \u098f\u09b2\u09be\u0995\u09be \u09ac\u09c7\u099b\u09c7 \u09a8\u09bf\u09a8, \u0995\u09be\u099b\u09c7\u09b0 \u09a6\u09be\u09a4\u09be\u0995\u09c7 \u09b8\u09b0\u09be\u09b8\u09b0\u09bf \u0995\u09b2 \u0995\u09b0\u09c1\u09a8\u0964 \u09b8\u09ae\u09cd\u09aa\u09c2\u09b0\u09cd\u09a3 \u09ac\u09bf\u09a8\u09be\u09ae\u09c2\u09b2\u09cd\u09af\u09c7, \u09b2\u0997\u0987\u09a8 \u09ac\u09be \u0985\u09cd\u09af\u09be\u09aa \u09b2\u09be\u0997\u09c7 \u09a8\u09be\u0964";
 
-export const metadata: Metadata = {
+export async function generateMetadata(): Promise<Metadata> {
+  const m = messages[await requestLocale()].meta;
+  return {
   metadataBase: new URL(SITE_URL),
-  title: `${APP_NAME} - Find a blood donor in Chittagong`,
-  description: "Search available blood donors by blood group and area in Chittagong, Bangladesh. No login needed.",
+  // E4: titles follow the visitor's language; each page adds its own name in front.
+  title: { default: m.home, template: `%s | ${APP_NAME}` },
+  description: m.description,
+  manifest: "/manifest.webmanifest",
   openGraph: {
     type: "website",
     siteName: APP_NAME,
@@ -48,14 +50,13 @@ export const metadata: Metadata = {
     description: OG_DESC,
     images: ["/og.png"],
   },
-};
+  };
+}
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const cookieStore = await cookies();
-  const cookieLocale = cookieStore.get(LOCALE_COOKIE)?.value;
-  const locale = isLocale(cookieLocale) ? cookieLocale : DEFAULT_LOCALE;
+  const locale = await requestLocale();
 
   return (
     // suppressHydrationWarning: browser extensions (coupon/reward tools, translators) add attributes to <html>
