@@ -1,7 +1,7 @@
 import "server-only";
 import { allowedHostnames, isProduction } from "./env";
 import { ApiError } from "./http";
-import { logError } from "./log";
+import { log, logError } from "./log";
 
 const VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 
@@ -44,7 +44,21 @@ export async function verifyCaptcha(token: unknown, ip: string, action: CaptchaA
     logError("captcha_unreachable", e);
     throw new ApiError(503, "captcha_unavailable");
   }
-  checkSiteVerify(data, action, allowedHostnames());
+  try {
+    checkSiteVerify(data, action, allowedHostnames());
+  } catch (e) {
+    // Without this, every rejection reaches the user as "you look like a robot" and leaves no
+    // trace of WHY: a wrong secret, a hostname Cloudflare doesn't recognise and a replayed token
+    // are indistinguishable. None of these fields is a secret.
+    log("warn", "captcha_rejected", {
+      codes: data["error-codes"] ?? [],
+      cfHostname: data.hostname ?? null,
+      cfAction: data.action ?? null,
+      expectedAction: action,
+      allowedHostnames: allowedHostnames(),
+    });
+    throw e;
+  }
 }
 
 /** Pure, so it can be unit tested: throws captcha_failed unless the answer is for us. */
