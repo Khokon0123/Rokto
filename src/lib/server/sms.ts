@@ -1,6 +1,9 @@
 import "server-only";
 import { APP_NAME } from "@/config/app";
+import { isProduction } from "./env";
 import { ApiError } from "./http";
+import { log, maskPhone } from "./log";
+import { otpMessage, parseAlpha, parseBulkSmsBd, parseBulkSmsDhaka, type ParseResult } from "./smsParsers";
 
 const DEFAULT_BULKSMSBD_URL = "https://bulksmsbd.net/api/smsapi";
 const DEFAULT_ALPHA_URL = "https://api.sms.net.bd/sendsms";
@@ -8,152 +11,109 @@ const DEFAULT_BULKSMSDHAKA_URL = "https://bulksmsdhaka.net/api/sendtext";
 
 /**
  * Sends the OTP text. Provider is chosen with SMS_PROVIDER:
- *   "alpha"     - real SMS through Alpha SMS (needs ALPHA_SMS_API_KEY; ALPHA_SMS_SENDER_ID optional)
- *   "bulksmsbd" - real SMS through BulkSMSBD (non-masking, needs BULKSMSBD_API_KEY + BULKSMSBD_SENDER_ID)
- *   "bulksmsdhaka" - real SMS through Bulk SMS Dhaka (needs BULKSMSDHAKA_API_KEY;
- *                    BULKSMSDHAKA_SENDER_ID optional - non-masking sends from a random sender)
- *   "console"   - development only: prints the code in the terminal, sends nothing (free testing)
- * To use another Bangladeshi gateway later, add a branch here; nothing else needs to change.
+ *   "bulksmsdhaka" - Bulk SMS Dhaka (BULKSMSDHAKA_API_KEY; BULKSMSDHAKA_SENDER_ID optional)
+ *   "alpha"        - Alpha SMS (ALPHA_SMS_API_KEY; ALPHA_SMS_SENDER_ID optional)
+ *   "bulksmsbd"    - BulkSMSBD (BULKSMSBD_API_KEY + BULKSMSBD_SENDER_ID)
+ *   "console"      - development only: logs that a code was "sent", sends nothing
+ * SMS_DISABLED=true is an emergency kill switch: every send fails with sms_unavailable.
  */
-export async function sendOtpSms(phoneE164: string, code: string, ttlMinutes: number): Promise<void> {
-  const message = `${APP_NAME}: your verification code is ${code}. It expires in ${ttlMinutes} minutes. Do not share it.`;
+export async function sendOtpSms(phoneE164: string, code: string, ttlMinutes: number, locale: "bn" | "en" = "en"): Promise<void> {
+  if (process.env.SMS_DISABLED === "true") throw new ApiError(503, "sms_unavailable");
   const provider = process.env.SMS_PROVIDER ?? "console";
+  const message = otpMessage({
+    appName: APP_NAME,
+    code,
+    ttlMinutes,
+    domain: siteDomain(),
+    bangla: locale === "bn" && process.env.SMS_BANGLA === "true",
+  });
 
   if (provider === "console") {
-    if (process.env.NODE_ENV === "production") {
-      console.error("SMS_PROVIDER=console is not allowed in production.");
-      throw new ApiError(503, "sms_unavailable");
+    if (isProduction()) throw new ApiError(503, "sms_unavailable");
+    // Development only. The code goes to the terminal so testing needs no real SMS. The e2e suite
+    // reads codes from E2E_SMS_OUTBOX instead (never available in production, see above).
+    if (process.env.E2E_SMS_OUTBOX) {
+      const { appendFileSync } = await import("node:fs");
+      appendFileSync(process.env.E2E_SMS_OUTBOX, `${JSON.stringify({ phone: phoneE164, code })}\n`);
+      return;
     }
-    console.log(`\n[DEV SMS] to ${phoneE164}: ${message}\n`);
+    console.info(`\n[DEV SMS] to ${phoneE164}: ${message}\n`);
     return;
   }
 
-  if (provider === "bulksmsbd") {
-    const apiKey = process.env.BULKSMSBD_API_KEY;
-    const senderId = process.env.BULKSMSBD_SENDER_ID;
-    if (!apiKey || !senderId) {
-      console.error("BULKSMSBD_API_KEY / BULKSMSBD_SENDER_ID are not set.");
-      throw new ApiError(503, "sms_unavailable");
-    }
-    // POST (not GET) so the API key never lands in URLs or request logs. BulkSMSBD wants 8801XXXXXXXXX.
-    const body = new URLSearchParams({
-      api_key: apiKey,
-      type: "text",
-      number: phoneE164.replace(/^\+/, ""),
-      senderid: senderId,
-      message,
-    });
-    let result: { response_code?: number | string } = {};
-    try {
-      const res = await fetch(process.env.BULKSMSBD_API_URL ?? DEFAULT_BULKSMSBD_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body,
-        signal: AbortSignal.timeout(10_000),
-        cache: "no-store",
-      });
-      result = (await res.json().catch(() => ({}))) as typeof result;
-    } catch (e) {
-      console.error("BulkSMSBD request failed", e);
-      throw new ApiError(502, "sms_failed");
-    }
-    // 202 = submitted. Others: 1002 bad sender id, 1007 no balance, etc. Never log the code or the key.
-    if (Number(result.response_code) !== 202) {
-      console.error("BulkSMSBD rejected the SMS, response_code:", result.response_code);
-      throw new ApiError(502, "sms_failed");
-    }
-    return;
+  const send = SENDERS[provider];
+  if (!send) {
+    log("error", "sms_unknown_provider", { provider });
+    throw new ApiError(503, "sms_unavailable");
   }
+  const result = await send(phoneE164.replace(/^\+/, ""), message);
+  log(result.accepted ? "info" : "error", "sms_send", { provider, phone: maskPhone(phoneE164), ...result });
+  if (!result.accepted) throw new ApiError(502, "sms_failed");
+}
 
-  if (provider === "alpha") {
-    const apiKey = process.env.ALPHA_SMS_API_KEY;
-    const senderId = process.env.ALPHA_SMS_SENDER_ID; // optional - falls back to Alpha's default sender
-    if (!apiKey) {
-      console.error("ALPHA_SMS_API_KEY is not set.");
-      throw new ApiError(503, "sms_unavailable");
-    }
-    // POST (not GET) so the API key never lands in URLs or request logs. Alpha wants 8801XXXXXXXXX.
-    const body = new URLSearchParams({
-      api_key: apiKey,
-      to: phoneE164.replace(/^\+/, ""),
-      msg: message,
-    });
-    if (senderId) body.set("sender_id", senderId);
-    let result: { error?: number | string; msg?: string } = {};
-    try {
-      const res = await fetch(process.env.ALPHA_SMS_API_URL ?? DEFAULT_ALPHA_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body,
-        signal: AbortSignal.timeout(10_000),
-        cache: "no-store",
-      });
-      result = (await res.json().catch(() => ({}))) as typeof result;
-    } catch (e) {
-      console.error("Alpha SMS request failed", e);
-      throw new ApiError(502, "sms_failed");
-    }
-    // error 0 = submitted. Anything else (bad key, no balance, unapproved sender, ...) is a failure.
-    // Never log the code or the key.
-    if (Number(result.error) !== 0) {
-      console.error("Alpha SMS rejected the SMS, error:", result.error, result.msg);
-      throw new ApiError(502, "sms_failed");
-    }
-    return;
+function siteDomain(): string | null {
+  try {
+    return process.env.NEXT_PUBLIC_SITE_URL ? new URL(process.env.NEXT_PUBLIC_SITE_URL).hostname : null;
+  } catch {
+    return null;
   }
+}
 
-  if (provider === "bulksmsdhaka") {
-    const apiKey = process.env.BULKSMSDHAKA_API_KEY;
-    const senderId = process.env.BULKSMSDHAKA_SENDER_ID; // optional: non-masking sends from a random sender
-    if (!apiKey) {
-      console.error("BULKSMSDHAKA_API_KEY is not set.");
-      throw new ApiError(503, "sms_unavailable");
-    }
-    // This gateway documents GET with the key in the query string - unlike the two above, which
-    // take POST. The URL is never logged anywhere below, and anything we do log is redacted.
+type Sender = (number: string, message: string) => Promise<ParseResult>;
+
+function requireEnv(...keys: string[]): string[] {
+  const values = keys.map((k) => process.env[k] ?? "");
+  const missing = keys.filter((_, i) => !values[i]);
+  if (missing.length) {
+    log("error", "sms_not_configured", { missing });
+    throw new ApiError(503, "sms_unavailable");
+  }
+  return values;
+}
+
+/** Runs one HTTP call to a gateway; network failures and timeouts become a rejected result. */
+async function call(url: string | URL, init: RequestInit, timeoutMs: number, redact: string[]): Promise<{ status: number; raw: string }> {
+  try {
+    const res = await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs), cache: "no-store" });
+    return { status: res.status, raw: (await res.text()).trim() };
+  } catch (e) {
+    let msg = e instanceof Error ? e.message : String(e);
+    for (const secret of redact) msg = msg.split(secret).join("***");
+    log("error", "sms_request_failed", { message: msg.slice(0, 200) });
+    throw new ApiError(502, "sms_failed");
+  }
+}
+
+const form = (fields: Record<string, string>) => ({
+  method: "POST",
+  headers: { "Content-Type": "application/x-www-form-urlencoded" },
+  body: new URLSearchParams(fields),
+});
+
+const SENDERS: Record<string, Sender> = {
+  async bulksmsbd(number, message) {
+    const [apiKey, senderid] = requireEnv("BULKSMSBD_API_KEY", "BULKSMSBD_SENDER_ID");
+    const fields = { api_key: apiKey, type: "text", number, senderid, message };
+    const { status, raw } = await call(process.env.BULKSMSBD_API_URL ?? DEFAULT_BULKSMSBD_URL, form(fields), 10_000, [apiKey]);
+    return parseBulkSmsBd(status, raw);
+  },
+  async alpha(number, message) {
+    const [apiKey] = requireEnv("ALPHA_SMS_API_KEY");
+    const fields: Record<string, string> = { api_key: apiKey, to: number, msg: message };
+    if (process.env.ALPHA_SMS_SENDER_ID) fields.sender_id = process.env.ALPHA_SMS_SENDER_ID;
+    const { status, raw } = await call(process.env.ALPHA_SMS_API_URL ?? DEFAULT_ALPHA_URL, form(fields), 10_000, [apiKey]);
+    return parseAlpha(status, raw);
+  },
+  async bulksmsdhaka(number, message) {
+    // This gateway documents GET with the key in the query string. The URL is never logged.
+    const [apiKey] = requireEnv("BULKSMSDHAKA_API_KEY");
     const url = new URL(process.env.BULKSMSDHAKA_API_URL ?? DEFAULT_BULKSMSDHAKA_URL);
     url.searchParams.set("apikey", apiKey);
-    url.searchParams.set("number", phoneE164.replace(/^\+/, "")); // wants 8801XXXXXXXXX
+    url.searchParams.set("number", number);
     url.searchParams.set("message", message);
-    if (senderId) url.searchParams.set("callerID", senderId);
-
-    const redact = (text: string) => text.split(apiKey).join("***");
-    let raw = "";
-    let httpStatus = 0;
-    try {
-      // 15s, not 10s: this gateway has been seen taking ~9s to answer.
-      const res = await fetch(url, {
-        method: "GET",
-        signal: AbortSignal.timeout(15_000),
-        cache: "no-store",
-      });
-      httpStatus = res.status;
-      raw = (await res.text()).trim();
-    } catch (e) {
-      console.error("Bulk SMS Dhaka request failed:", redact(e instanceof Error ? e.message : String(e)));
-      throw new ApiError(502, "sms_failed");
-    }
-
-    // Gateways in this market answer inconsistently: JSON ({"Status":"1000"}), a bare numeric
-    // code, or a sentence. Read the body as text and accept any of those rather than assuming
-    // one shape - and if it is a rejection, log the body verbatim so the reason is visible.
-    let code = raw;
-    try {
-      const parsed = JSON.parse(raw) as Record<string, unknown>;
-      code = String(parsed.Status ?? parsed.status ?? parsed.code ?? parsed.response_code ?? raw);
-    } catch {
-      /* not JSON - fall back to the raw text */
-    }
-    // 1000 = accepted. Others include 1005 (flagged as spam) and 2001 (no balance).
-    const accepted = /(^|\D)1000(\D|$)/.test(code) || /success/i.test(code);
-    if (!accepted) {
-      // Truncated and key-redacted; the OTP itself is never part of the response.
-      console.error(`Bulk SMS Dhaka rejected the SMS (HTTP ${httpStatus}):`, redact(raw.slice(0, 300)) || "(empty body)");
-      throw new ApiError(502, "sms_failed");
-    }
-    return;
-  }
-
-  console.error(`Unknown SMS_PROVIDER "${provider}".`);
-  throw new ApiError(503, "sms_unavailable");
-}
+    if (process.env.BULKSMSDHAKA_SENDER_ID) url.searchParams.set("callerID", process.env.BULKSMSDHAKA_SENDER_ID);
+    // 15s: this gateway has been seen taking ~9s to answer.
+    const { status, raw } = await call(url, { method: "GET" }, 15_000, [apiKey]);
+    return parseBulkSmsDhaka(status, raw);
+  },
+};

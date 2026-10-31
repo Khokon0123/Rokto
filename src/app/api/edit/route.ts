@@ -1,100 +1,78 @@
-import { FieldValue } from "firebase-admin/firestore";
+import { ALLOW_PROFILE_CORRECTIONS } from "@/config/app";
 import { isValidAreaId } from "@/lib/areas";
-import { fuzzGeoPoint, isValidGeoPoint } from "@/lib/geo";
+import { isBloodGroup } from "@/lib/bloodGroups";
+import { isValidGeoPoint } from "@/lib/geo";
 import { normalizeBdPhone } from "@/lib/phone";
-import { parseDateOnly } from "@/lib/validation";
+import { cleanName, parseDateOnly } from "@/lib/validation";
 import { ApiError, handle, json, readJson } from "@/lib/server/http";
-import { verifyPhoneProof } from "@/lib/server/otp";
-import {
-  deleteDonor,
-  findDonorRefByToken,
-  phoneTakenByOther,
-  toEditable,
-  toTimestamp,
-} from "@/lib/server/donors";
+import { deleteProfileByToken, loadProfileByToken, updateProfileByToken, type ProfilePatch } from "@/lib/server/donors";
 
-// The edit token in the request body is the sole credential for every method here.
-
-async function requireDonor(token: unknown) {
-  const ref = await findDonorRefByToken(token);
-  if (!ref) throw new ApiError(404, "link_invalid");
-  const snap = await ref.get();
-  if (!snap.exists) throw new ApiError(404, "link_invalid");
-  return { ref, data: snap.data()! };
-}
+// The edit token in the request body is the sole credential for every method here. It is checked
+// inside the same transaction as the change it authorizes (D3).
 
 // POST /api/edit  { token } -> load profile
 export function POST(req: Request) {
   return handle(async () => {
     const body = await readJson(req);
-    const { data } = await requireDonor(body.token);
-    return json({ profile: toEditable(data) });
+    return json({ profile: await loadProfileByToken(body.token) });
   });
 }
 
-// PATCH /api/edit  { token, available?, lastDonated?, area?, phone?, proof? }
+function parsePatch(body: Record<string, unknown>): ProfilePatch {
+  const patch: ProfilePatch = {};
+  if ("available" in body) {
+    if (typeof body.available !== "boolean") throw new ApiError(400, "bad_request");
+    patch.available = body.available;
+  }
+  if ("lastDonated" in body) {
+    if (body.lastDonated === null || body.lastDonated === "") patch.lastDonated = null;
+    else {
+      const d = parseDateOnly(body.lastDonated);
+      if (!d) throw new ApiError(400, "date_invalid");
+      patch.lastDonated = d;
+    }
+  }
+  if ("area" in body) {
+    if (!isValidAreaId(body.area)) throw new ApiError(400, "area_invalid");
+    patch.area = body.area;
+  }
+  if ("location" in body) {
+    if (body.location !== null && !isValidGeoPoint(body.location)) throw new ApiError(400, "location_invalid");
+    patch.location = body.location as ProfilePatch["location"];
+  }
+  if ("name" in body || "bloodGroup" in body) {
+    if (!ALLOW_PROFILE_CORRECTIONS) throw new ApiError(400, "bad_request");
+    if ("name" in body) {
+      const name = cleanName(body.name);
+      if (!name) throw new ApiError(400, "name_invalid");
+      patch.name = name;
+    }
+    if ("bloodGroup" in body) {
+      if (!isBloodGroup(body.bloodGroup)) throw new ApiError(400, "blood_group_invalid");
+      patch.bloodGroup = body.bloodGroup;
+    }
+  }
+  if ("phone" in body) {
+    const phone = typeof body.phone === "string" ? normalizeBdPhone(body.phone) : null;
+    if (!phone) throw new ApiError(400, "phone_invalid");
+    patch.phone = { phone, proof: body.proof };
+  }
+  return patch;
+}
+
+// PATCH /api/edit  { token, available?, lastDonated?, area?, location?, name?, bloodGroup?, phone? + proof }
 export function PATCH(req: Request) {
   return handle(async () => {
     const body = await readJson(req);
-    const { ref, data } = await requireDonor(body.token);
-    const updates: Record<string, unknown> = {};
-
-    if ("available" in body) {
-      if (typeof body.available !== "boolean") throw new ApiError(400, "bad_request");
-      updates.available = body.available;
-    }
-    if ("lastDonated" in body) {
-      if (body.lastDonated === null || body.lastDonated === "") {
-        updates.lastDonated = null;
-      } else {
-        const d = parseDateOnly(body.lastDonated);
-        if (!d) throw new ApiError(400, "date_invalid");
-        updates.lastDonated = toTimestamp(d);
-      }
-    }
-    if ("area" in body) {
-      if (!isValidAreaId(body.area)) throw new ApiError(400, "area_invalid");
-      updates.area = body.area;
-    }
-    if ("location" in body) {
-      if (body.location === null) {
-        updates.location = null;
-      } else {
-        if (!isValidGeoPoint(body.location)) throw new ApiError(400, "location_invalid");
-        // Re-fuzzed on every save, including an update to an already-fuzzed point - the donor's
-        // device only ever reports its own real position, so this is where privacy is enforced.
-        updates.location = fuzzGeoPoint(body.location);
-      }
-    }
-
-    if ("phone" in body) {
-      const newPhone = typeof body.phone === "string" ? normalizeBdPhone(body.phone) : null;
-      if (!newPhone) throw new ApiError(400, "phone_invalid");
-      if (newPhone !== data.phone) {
-        // A new number must be proven with a fresh OTP for THAT number.
-        const verified = verifyPhoneProof(body.proof);
-        if (verified.phone !== newPhone) throw new ApiError(401, "otp_invalid");
-        if (await phoneTakenByOther(newPhone, ref.id)) throw new ApiError(409, "phone_taken");
-        updates.phone = newPhone;
-        updates.phoneVerified = true;
-      }
-    }
-
-    if (Object.keys(updates).length === 0) throw new ApiError(400, "bad_request");
-    updates.updatedAt = FieldValue.serverTimestamp();
-    await ref.update(updates);
-
-    const fresh = await ref.get();
-    return json({ profile: toEditable(fresh.data()!) });
+    return json({ profile: await updateProfileByToken(body.token, parsePatch(body)) });
   });
 }
 
-// DELETE /api/edit  { token } -> remove profile and its token record
+// DELETE /api/edit  { token } -> remove profile, its token record and its phone index
 export function DELETE(req: Request) {
   return handle(async () => {
     const body = await readJson(req);
-    const { ref } = await requireDonor(body.token);
-    await deleteDonor(ref.id);
+    await deleteProfileByToken(body.token);
     return json({ ok: true });
   });
 }

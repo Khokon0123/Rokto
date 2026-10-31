@@ -9,10 +9,18 @@ import { useErrorMessage, useLocale, useT } from "@/components/LocaleProvider";
 import { btnPrimary, btnSecondary, cardClass, errorTextClass, inputClass, labelClass } from "@/components/styles";
 import { fmt } from "@/i18n";
 import { formatNumber } from "@/i18n/locale";
+import { SEARCH_PAGE_SIZE } from "@/config/app";
+import { apiCall } from "@/lib/api";
 import { BLOOD_GROUPS, isBloodGroup, type BloodGroup } from "@/lib/bloodGroups";
-import { isFirebaseConfigured } from "@/lib/firebase/client";
 import { getCurrentPosition, type GeoPoint } from "@/lib/geo";
-import { searchDonors, sortByDistance, type SearchResult } from "@/lib/search";
+import {
+  fromResponse,
+  searchQueryString,
+  sortByDistance,
+  type SearchParams,
+  type SearchResponse,
+  type SearchResult,
+} from "@/lib/search";
 
 // Locale-less by design: this fallback is top-level (outside the component, so dynamic() only
 // ever loads the chunk once) and only shows for the brief moment the map code downloads - a
@@ -22,7 +30,7 @@ const DonorMap = dynamic(() => import("@/components/DonorMap"), {
   loading: () => (
     <div
       aria-hidden="true"
-      className="h-[70vh] max-h-[560px] w-full animate-pulse rounded-3xl border border-line bg-surface"
+      className="h-[70vh] max-h-[560px] w-full rounded-3xl border border-line bg-surface motion-safe:animate-pulse"
     />
   ),
 });
@@ -30,7 +38,35 @@ const DonorMap = dynamic(() => import("@/components/DonorMap"), {
 interface Loaded {
   key: string; // which search these results belong to
   results: SearchResult[];
-  failed: boolean;
+  total: number;
+  truncated: boolean;
+  /** false, or why it failed: the visitor's connection, or our side being down. */
+  failed: false | "network" | "server";
+}
+
+async function runSearch(params: SearchParams): Promise<Omit<Loaded, "key">> {
+  const res = await apiCall<SearchResponse>(`/api/search?${searchQueryString(params)}`, "GET");
+  if (!res.ok || !res.data) {
+    return { results: [], total: 0, truncated: false, failed: res.status === 0 ? "network" : "server" };
+  }
+  return { results: fromResponse(res.data, params), total: res.data.total, truncated: res.data.truncated, failed: false };
+}
+
+/** Loads `params` whenever `key` changes (or `enabled` turns on). Old data stays until the new
+ *  data arrives, but callers must treat it as stale while `loaded.key !== key` (F1, F2). */
+function useSearch(key: string, params: SearchParams, enabled: boolean) {
+  const [loaded, setLoaded] = useState<Loaded | null>(null);
+  const paramsJson = JSON.stringify(params);
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
+    void runSearch(JSON.parse(paramsJson) as SearchParams).then((r) => !cancelled && setLoaded({ key, ...r }));
+    return () => {
+      cancelled = true;
+    };
+  }, [key, enabled, paramsJson]);
+  const status: "loading" | "error" | "ready" = loaded?.key !== key ? "loading" : loaded.failed ? "error" : "ready";
+  return { loaded, status };
 }
 
 export default function SearchClient() {
@@ -41,17 +77,11 @@ export default function SearchClient() {
   const [area, setArea] = useState<string | null>(null);
   const [includeCompatible, setIncludeCompatible] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  const configured = isFirebaseConfigured();
-  const [loaded, setLoaded] = useState<Loaded | null>(null);
-  const [mapLoaded, setMapLoaded] = useState<Loaded | null>(null);
   const [nearMe, setNearMe] = useState<GeoPoint | null>(null);
   const [locating, setLocating] = useState(false);
   const [locateError, setLocateError] = useState<string | null>(null);
   const [view, setView] = useState<"list" | "map">("list");
-  // Load the full list as soon as the page opens: someone arriving here usually needs blood now,
-  // and making them press a button first is friction at the worst possible moment. Changing a
-  // filter re-runs the query on its own; the button is just an explicit refresh.
-  const [searched, setSearched] = useState(true);
+  const [shown, setShown] = useState(SEARCH_PAGE_SIZE);
 
   function useMyLocation() {
     setLocating(true);
@@ -68,40 +98,29 @@ export default function SearchClient() {
   }
 
   const compatible = Boolean(group) && includeCompatible;
+  const bloodGroup = group || null;
+  // The list is opened as soon as the page loads: someone here usually needs blood now.
   const key = `${group}|${area ?? ""}|${compatible}|${attempt}`;
-  // The map ignores the area filter on purpose (panning is how you explore by area on a map) - blood
-  // group still applies, since that's the actual medical need rather than a convenience filter.
+  // The map ignores the area filter on purpose (panning is how you explore a map); blood group still applies.
   const mapKey = `${group}|${compatible}|${attempt}`;
+  const list = useSearch(key, { bloodGroup, area, includeCompatible: compatible }, true);
+  const map = useSearch(mapKey, { bloodGroup, area: null, includeCompatible: compatible }, view === "map");
 
-  useEffect(() => {
-    if (!configured || !searched) return;
-    let cancelled = false;
-    searchDonors({ bloodGroup: group || null, area, includeCompatible: compatible })
-      .then((results) => !cancelled && setLoaded({ key, results, failed: false }))
-      .catch(() => !cancelled && setLoaded((prev) => ({ key, results: prev?.results ?? [], failed: true })));
-    return () => {
-      cancelled = true;
-    };
-  }, [key, group, area, compatible, configured, searched]);
+  // A new filter starts from the first page again.
+  const [pageKey, setPageKey] = useState(key);
+  if (pageKey !== key) {
+    setPageKey(key);
+    setShown(SEARCH_PAGE_SIZE);
+  }
 
-  useEffect(() => {
-    if (!configured || !searched || view !== "map") return;
-    let cancelled = false;
-    searchDonors({ bloodGroup: group || null, area: null, includeCompatible: compatible })
-      .then((results) => !cancelled && setMapLoaded({ key: mapKey, results, failed: false }))
-      .catch(() => !cancelled && setMapLoaded((prev) => ({ key: mapKey, results: prev?.results ?? [], failed: true })));
-    return () => {
-      cancelled = true;
-    };
-  }, [mapKey, group, compatible, configured, searched, view]);
+  const results = list.loaded?.results ?? [];
+  const stale = list.status === "loading" && results.length > 0;
+  const ordered = nearMe ? sortByDistance(results, nearMe) : results;
+  const displayed = ordered.slice(0, shown);
+  const total = list.loaded?.total ?? 0;
 
-  // Previous results stay on screen while the next search loads, so the list never flashes empty.
-  const results = loaded?.results ?? [];
-  const displayed = nearMe ? sortByDistance(results, nearMe) : results;
-  const status: "loading" | "error" | "ready" =
-    loaded?.key !== key ? "loading" : loaded.failed ? "error" : "ready";
-
-  const mapResults = mapLoaded?.results ?? [];
+  // Stale pins are hidden rather than shown with the wrong group (F2).
+  const mapResults = map.status === "ready" ? (map.loaded?.results ?? []) : [];
   const mapDisplayed = nearMe ? sortByDistance(mapResults, nearMe) : mapResults;
 
   return (
@@ -110,7 +129,6 @@ export default function SearchClient() {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          setSearched(true);
           setAttempt((n) => n + 1);
         }}
         aria-label={t.search.heading}
@@ -162,7 +180,7 @@ export default function SearchClient() {
         </button>
       </form>
 
-      {configured && searched && (
+      {(
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3 text-sm">
             {nearMe ? (
@@ -198,7 +216,7 @@ export default function SearchClient() {
       {/* Distance is the first thing you want in an emergency, but it can only be worked out from
           the searcher's own position - so ask for it with the reason stated, rather than leaving
           it behind an unexplained "use my location" button that most people scroll straight past. */}
-      {configured && searched && !nearMe && (view === "map" || results.length > 0) && (
+      {!nearMe && (view === "map" || results.length > 0) && (
         <div className="rounded-3xl border-2 border-accent bg-accent-soft p-5">
           <p className="text-lg font-bold text-accent-deep">{t.search.distanceTitle}</p>
           <p className="mt-1 text-base text-ink">{t.search.distanceBody}</p>
@@ -214,22 +232,41 @@ export default function SearchClient() {
       )}
       {locateError && <p className={errorTextClass}>{errorMessage(locateError)}</p>}
 
-      {!configured ? (
-        <p className={cardClass}>{t.search.notConfigured}</p>
-      ) : !searched ? null : view === "map" ? (
-        <>
+      {view === "map" ? (
+        <div className="space-y-3">
           <p className="text-sm text-muted">{t.search.mapAllAreas}</p>
-          <DonorMap results={mapDisplayed} from={nearMe} area={area} />
-        </>
-      ) : status === "error" ? (
+          {map.status === "error" ? (
+            <div role="alert" className={`${cardClass} space-y-3`}>
+              <p>{t.search.mapError}</p>
+              <button type="button" className={btnSecondary} onClick={() => setAttempt((n) => n + 1)}>
+                {t.search.retry}
+              </button>
+            </div>
+          ) : (
+            <div className="relative" aria-busy={map.status === "loading"}>
+              {map.status === "loading" && (
+                <p
+                  role="status"
+                  className="absolute inset-x-0 top-3 z-[1000] mx-auto w-fit rounded-full bg-surface px-4 py-2 text-sm font-semibold text-ink shadow-card"
+                >
+                  {t.search.mapLoading}
+                </p>
+              )}
+              <DonorMap results={mapDisplayed} from={nearMe} area={area} />
+            </div>
+          )}
+        </div>
+      ) : list.status === "error" ? (
         <div role="alert" className={`${cardClass} space-y-3`}>
-          <p>{t.search.error}</p>
+          <p>{list.loaded?.failed === "server" ? t.search.unavailable : t.search.error}</p>
           <button type="button" className={btnSecondary} onClick={() => setAttempt((n) => n + 1)}>
             {t.search.retry}
           </button>
         </div>
-      ) : status === "loading" && results.length === 0 ? (
-        <p className="text-base text-muted">{t.search.loading}</p>
+      ) : list.status === "loading" && results.length === 0 ? (
+        <p role="status" className="text-base text-muted">
+          {t.search.loading}
+        </p>
       ) : results.length === 0 ? (
         <div className={`${cardClass} space-y-2`}>
           <p className="text-lg font-semibold">{t.search.empty}</p>
@@ -239,16 +276,36 @@ export default function SearchClient() {
           </Link>
         </div>
       ) : (
-        <>
+        <div aria-busy={stale}>
+          {/* F1: while new filters load, old results are dimmed, their Call buttons disabled, and
+              the count (which belongs to the old filters) is replaced by a progress line. */}
           <p aria-live="polite" className="text-sm font-semibold text-muted">
-            {results.length === 1 ? t.search.countOne : fmt(t.search.count, { count: formatNumber(results.length, locale) })}
+            {stale
+              ? t.search.updating
+              : total === 1
+                ? t.search.countOne
+                : fmt(t.search.count, { count: formatNumber(total, locale) })}
           </p>
-          <ul className="space-y-3">
+          {!stale && list.loaded?.truncated && (
+            <p className="mt-1 text-sm text-muted">
+              {fmt(t.search.truncated, { count: formatNumber(results.length, locale) })}
+            </p>
+          )}
+          <ul className={`mt-3 space-y-3 motion-safe:transition-opacity ${stale ? "pointer-events-none opacity-40" : ""}`}>
             {displayed.map((r) => (
-              <DonorCard key={r.donor.id} result={r} />
+              <DonorCard key={r.donor.id} result={r} stale={stale} />
             ))}
           </ul>
-        </>
+          {!stale && displayed.length < ordered.length && (
+            <button
+              type="button"
+              className={`${btnSecondary} mt-4 w-full`}
+              onClick={() => setShown((n) => n + SEARCH_PAGE_SIZE)}
+            >
+              {t.search.showMore}
+            </button>
+          )}
+        </div>
       )}
 
       <p className="pt-4 text-center text-sm">

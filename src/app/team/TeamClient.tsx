@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type KeyboardEvent } from "react";
 import { useT } from "@/components/LocaleProvider";
 import { cardClass } from "@/components/styles";
 import TeamAvatar from "@/components/TeamAvatar";
@@ -8,22 +8,48 @@ import { TEAM_SECTIONS, type TeamMember, type TeamSection } from "@/lib/team";
 
 // Same pattern as /register and /search: the page headline lives in the red hero band
 // (SiteHeader), so this content starts with a negative margin to sit under it.
-export default function TeamClient({ members }: { members: TeamMember[] }) {
+export default function TeamClient({ members }: { members: TeamMember[] | null }) {
   const t = useT();
+  const list = members ?? [];
   const tabs = TEAM_SECTIONS.map((section) => ({
     section,
     label: section === "founding" ? t.team.founding : t.team.operations,
-    people: members.filter((m) => m.section === section),
+    people: list.filter((m) => m.section === section),
   })).filter((tab) => tab.people.length > 0);
   const [active, setActive] = useState<TeamSection>(tabs[0]?.section ?? "founding");
   const current = tabs.find((tab) => tab.section === active) ?? tabs[0];
+
+  // A2: arrow keys move between tabs; only the selected tab is in the Tab order.
+  function onTabKey(e: KeyboardEvent<HTMLButtonElement>, index: number) {
+    const last = tabs.length - 1;
+    const next =
+      e.key === "ArrowRight" ? (index === last ? 0 : index + 1)
+      : e.key === "ArrowLeft" ? (index === 0 ? last : index - 1)
+      : e.key === "Home" ? 0
+      : e.key === "End" ? last
+      : -1;
+    if (next < 0) return;
+    e.preventDefault();
+    setActive(tabs[next].section);
+    document.getElementById(`tab-${tabs[next].section}`)?.focus();
+  }
+
+  if (members === null) {
+    return (
+      <div className="relative -mt-14">
+        <p role="alert" className={cardClass}>
+          {t.team.unavailable}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="relative -mt-14 space-y-5">
       <div className={`${cardClass} space-y-5`}>
         {tabs.length > 1 && (
           <div role="tablist" aria-label={t.hero.team} className="flex gap-1 rounded-2xl bg-page p-1">
-            {tabs.map((tab) => (
+            {tabs.map((tab, index) => (
               <button
                 key={tab.section}
                 id={`tab-${tab.section}`}
@@ -31,8 +57,10 @@ export default function TeamClient({ members }: { members: TeamMember[] }) {
                 role="tab"
                 aria-selected={tab.section === current?.section}
                 aria-controls={`panel-${tab.section}`}
+                tabIndex={tab.section === current?.section ? 0 : -1}
+                onKeyDown={(e) => onTabKey(e, index)}
                 onClick={() => setActive(tab.section)}
-                className={`min-h-12 flex-1 rounded-xl px-3 text-base font-semibold transition-colors ${
+                className={`min-h-12 flex-1 rounded-xl px-3 text-base font-semibold motion-safe:transition-colors ${
                   tab.section === current?.section ? "bg-accent text-white shadow-sm" : "text-ink hover:bg-surface"
                 }`}
               >
@@ -102,7 +130,7 @@ function Person({ person }: { person: TeamMember }) {
         <svg
           aria-hidden="true"
           viewBox="0 0 20 20"
-          className={`h-5 w-5 shrink-0 text-muted transition-transform ${open ? "rotate-180" : ""}`}
+          className={`h-5 w-5 shrink-0 text-muted motion-safe:transition-transform ${open ? "rotate-180" : ""}`}
         >
           <path d="M5 7.5 10 12.5 15 7.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>

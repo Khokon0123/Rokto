@@ -1,25 +1,58 @@
 import "server-only";
+import { allowedHostnames, isProduction } from "./env";
 import { ApiError } from "./http";
+import { logError } from "./log";
+
+const VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
+
+export type CaptchaAction = "otp_send" | "reveal" | "report";
+
+interface SiteVerify {
+  success?: boolean;
+  hostname?: string;
+  action?: string;
+  "error-codes"?: string[];
+}
 
 /**
- * Optional Cloudflare Turnstile (free) check. Enabled only when TURNSTILE_SECRET_KEY is set,
- * so local development works without it. Protects the SMS-sending endpoint from bots.
+ * Cloudflare Turnstile check (S3, S12).
+ * - Production: required. Missing keys -> 503, never a silent skip.
+ * - Development: skipped when TURNSTILE_SECRET_KEY isn't set, so local testing works.
+ * - The token must be for THIS site (hostname) and THIS form (action).
+ * - Cloudflare down / 5xx -> 503 captcha_unavailable, not "you're a robot".
  */
-export async function verifyCaptcha(token: unknown, ip: string): Promise<void> {
+export async function verifyCaptcha(token: unknown, ip: string, action: CaptchaAction): Promise<void> {
   const secret = process.env.TURNSTILE_SECRET_KEY;
-  if (!secret) return;
-  if (typeof token !== "string" || token.length < 10) throw new ApiError(400, "captcha_failed");
+  if (!secret) {
+    if (isProduction()) throw new ApiError(503, "captcha_unavailable");
+    return;
+  }
+  if (typeof token !== "string" || token.length < 10 || token.length > 4096) throw new ApiError(400, "captcha_failed");
+
+  let data: SiteVerify;
   try {
-    const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+    const res = await fetch(VERIFY_URL, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ secret, response: token, remoteip: ip }),
+      body: new URLSearchParams({ secret, response: token, ...(ip && ip !== "unknown" ? { remoteip: ip } : {}) }),
       signal: AbortSignal.timeout(8_000),
+      cache: "no-store",
     });
-    const data = (await res.json()) as { success?: boolean };
-    if (!data.success) throw new ApiError(400, "captcha_failed");
+    if (!res.ok) throw new Error(`siteverify HTTP ${res.status}`);
+    data = (await res.json()) as SiteVerify;
   } catch (e) {
-    if (e instanceof ApiError) throw e;
+    logError("captcha_unreachable", e);
+    throw new ApiError(503, "captcha_unavailable");
+  }
+  checkSiteVerify(data, action, allowedHostnames());
+}
+
+/** Pure, so it can be unit tested: throws captcha_failed unless the answer is for us. */
+export function checkSiteVerify(data: SiteVerify, action: CaptchaAction, hostnames: string[]): void {
+  if (data.success !== true) throw new ApiError(400, "captcha_failed");
+  // Hostnames are enforced whenever we know our own (always in production: NEXT_PUBLIC_SITE_URL).
+  if (hostnames.length > 0 && (!data.hostname || !hostnames.includes(data.hostname))) {
     throw new ApiError(400, "captcha_failed");
   }
+  if (data.action !== action) throw new ApiError(400, "captcha_failed");
 }

@@ -1,9 +1,7 @@
-import { collection, getDocs, limit, query, where, Timestamp, type QueryConstraint } from "firebase/firestore";
 import { SEARCH_LIMIT } from "@/config/app";
 import { getArea } from "./areas";
 import { compatibleDonorGroups, isBloodGroup, type BloodGroup } from "./bloodGroups";
 import { isCoolingDown } from "./donation";
-import { clientDb } from "./firebase/client";
 import { haversineKm, isValidGeoPoint, type GeoPoint } from "./geo";
 import type { Donor } from "./types";
 
@@ -23,46 +21,21 @@ export interface SearchResult {
   distanceKm?: number;
 }
 
-/**
- * The ONE place that reads donors. v1 queries Firestore straight from the browser (public read).
- * Future: swap this body for a fetch("/api/donors/search") to add rate limiting / caching
- * without touching any component.
- *
- * Only equality filters are used, so no composite index is needed. Ordering happens client-side.
- */
-export async function searchDonors(params: SearchParams): Promise<SearchResult[]> {
-  const constraints: QueryConstraint[] = [where("available", "==", true)];
+/** What /api/search returns (JSON-safe: dates as YYYY-MM-DD). */
+export interface SearchResponse {
+  donors: Array<Omit<Donor, "lastDonated" | "available"> & { lastDonated: string | null }>;
+  total: number;
+  truncated: boolean;
+}
 
-  if (params.area) constraints.push(where("area", "==", params.area));
-  if (params.bloodGroup) {
-    const groups = params.includeCompatible ? compatibleDonorGroups(params.bloodGroup) : [params.bloodGroup];
-    constraints.push(where("bloodGroup", "in", [...groups]));
-  }
-
-  const snap = await getDocs(query(collection(clientDb(), "donors"), ...constraints, limit(SEARCH_LIMIT)));
-  const now = Date.now();
-
-  const results: SearchResult[] = [];
-  for (const doc of snap.docs) {
-    const d = doc.data();
-    if (!isBloodGroup(d.bloodGroup)) continue;
-    const lastDonated = d.lastDonated instanceof Timestamp ? d.lastDonated.toDate() : null;
-    results.push({
-      donor: {
-        id: doc.id,
-        name: String(d.name ?? ""),
-        phone: String(d.phone ?? ""),
-        bloodGroup: d.bloodGroup,
-        area: String(d.area ?? ""),
-        available: true,
-        lastDonated,
-        location: isValidGeoPoint(d.location) ? d.location : null,
-      },
-      coolingDown: isCoolingDown(lastDonated, now),
-      exact: !params.bloodGroup || d.bloodGroup === params.bloodGroup,
-    });
-  }
-  return sortResults(results);
+export interface DirectoryLike {
+  id: string;
+  name: string;
+  bloodGroup: string;
+  area: string;
+  lastDonated: string | null;
+  location: GeoPoint | null;
+  phone?: string;
 }
 
 /** "Available now" first, then exact group before compatible, then longest since last donation. */
@@ -77,11 +50,73 @@ export function sortResults(results: SearchResult[]): SearchResult[] {
   });
 }
 
+const toDate = (iso: string | null) => (iso ? new Date(`${iso}T00:00:00Z`) : null);
+
 /**
- * Re-ranks by distance from `from` (opt-in, e.g. the searcher's own device location - never
- * sent anywhere, used only in the browser for this one sort). Uses the donor's own exact
- * location when they shared one, otherwise falls back to their area's approximate center.
- * Donors who gave blood recently still sort to the bottom, same as the default order.
+ * Filters, ranks, THEN cuts to SEARCH_LIMIT (F5: sorting after a cut could drop ready donors).
+ * Pure: used by the server route and by the tests.
+ */
+export function selectResults(
+  entries: DirectoryLike[],
+  params: SearchParams,
+  now = Date.now(),
+  limit = SEARCH_LIMIT,
+): { results: SearchResult[]; total: number; truncated: boolean } {
+  const groups = params.bloodGroup
+    ? new Set<string>(params.includeCompatible ? compatibleDonorGroups(params.bloodGroup) : [params.bloodGroup])
+    : null;
+  const matched: SearchResult[] = [];
+  for (const e of entries) {
+    if (!isBloodGroup(e.bloodGroup)) continue;
+    if (params.area && e.area !== params.area) continue;
+    if (groups && !groups.has(e.bloodGroup)) continue;
+    const lastDonated = toDate(e.lastDonated);
+    matched.push({
+      donor: {
+        id: e.id,
+        name: e.name,
+        phone: e.phone ?? "",
+        bloodGroup: e.bloodGroup,
+        area: e.area,
+        available: true,
+        lastDonated,
+        location: isValidGeoPoint(e.location) ? e.location : null,
+      },
+      coolingDown: isCoolingDown(lastDonated, now),
+      exact: !params.bloodGroup || e.bloodGroup === params.bloodGroup,
+    });
+  }
+  const sorted = sortResults(matched);
+  return { results: sorted.slice(0, limit), total: sorted.length, truncated: sorted.length > limit };
+}
+
+/** Parses /api/search query params; anything invalid falls back to "no filter". */
+export function parseSearchParams(q: URLSearchParams): SearchParams {
+  const group = q.get("group");
+  const area = q.get("area");
+  return {
+    bloodGroup: isBloodGroup(group) ? group : null,
+    area: area && getArea(area) ? area : null,
+    includeCompatible: q.get("compatible") === "1" && isBloodGroup(group),
+  };
+}
+
+/** Rebuilds client-side results from the API response. */
+export function fromResponse(res: SearchResponse, params: SearchParams, now = Date.now()): SearchResult[] {
+  return res.donors.map((d) => {
+    const lastDonated = toDate(d.lastDonated);
+    return {
+      donor: { ...d, phone: d.phone ?? "", available: true, lastDonated },
+      coolingDown: isCoolingDown(lastDonated, now),
+      exact: !params.bloodGroup || d.bloodGroup === params.bloodGroup,
+    };
+  });
+}
+
+/**
+ * Re-ranks by distance from `from` (opt-in: the searcher's own device location, used only in the
+ * browser for this sort and never sent anywhere). Uses the donor's approximate location when they
+ * shared one, otherwise their area's centre. Recent donors still sort to the bottom.
  */
 export function sortByDistance(results: SearchResult[], from: GeoPoint): SearchResult[] {
   const distanceOf = (r: SearchResult): number => {
@@ -94,4 +129,12 @@ export function sortByDistance(results: SearchResult[], from: GeoPoint): SearchR
       if (a.coolingDown !== b.coolingDown) return a.coolingDown ? 1 : -1;
       return (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity);
     });
+}
+
+export function searchQueryString(params: SearchParams): string {
+  const q = new URLSearchParams();
+  if (params.bloodGroup) q.set("group", params.bloodGroup);
+  if (params.area) q.set("area", params.area);
+  if (params.includeCompatible) q.set("compatible", "1");
+  return q.toString();
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import AreaAutocomplete from "@/components/AreaAutocomplete";
 import EditLinkCard from "@/components/EditLinkCard";
 import LocationField from "@/components/LocationField";
@@ -11,12 +11,20 @@ import { useErrorMessage, useT } from "@/components/LocaleProvider";
 import { btnPrimary, btnSecondary, cardClass, errorTextClass, inputClass, labelClass } from "@/components/styles";
 import { apiCall } from "@/lib/api";
 import { BLOOD_GROUPS, isBloodGroup } from "@/lib/bloodGroups";
-import { isFirebaseConfigured } from "@/lib/firebase/client";
 import type { GeoPoint } from "@/lib/geo";
 import { normalizeBdPhone } from "@/lib/phone";
 import { cleanName, todayIso } from "@/lib/validation";
 
-type Step = "form" | "otp" | "saving" | "done";
+type Step = "form" | "otp" | "saving" | "saveFailed" | "done";
+type Field = "name" | "phone" | "bloodGroup" | "area" | "lastDonated" | "consent";
+const FIELD_IDS: Record<Field, string> = {
+  name: "name",
+  phone: "phone",
+  bloodGroup: "bloodGroup",
+  area: "register-area",
+  lastDonated: "lastDonated",
+  consent: "consent",
+};
 type FieldErrors = Partial<
   Record<"name" | "phone" | "bloodGroup" | "area" | "lastDonated" | "consent", string>
 >;
@@ -37,6 +45,44 @@ export default function RegisterPage() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [verifiedPhone, setVerifiedPhone] = useState<string | null>(null);
   const [result, setResult] = useState<{ editToken: string; existing: boolean } | null>(null);
+  // F9: a verified phone stays verified for the proof's lifetime. A failed save is retried with the
+  // same proof (the server accepts an identical retry) instead of texting, and paying for, a new code.
+  const [proof, setProof] = useState<{ value: string; phone: string; expiresAt: number } | null>(null);
+
+  // The edit link is shown only once: warn before the page is closed or reloaded.
+  useEffect(() => {
+    if (step !== "done") return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [step]);
+
+  const payload = () => ({
+    name,
+    bloodGroup,
+    area,
+    location,
+    available,
+    lastDonated: lastDonated || null,
+    consent,
+  });
+
+  async function save(p: string) {
+    setStep("saving");
+    const res = await apiCall<{ editToken: string; existing: boolean }>("/api/donors", "POST", { proof: p, ...payload() });
+    if (res.ok && res.data) {
+      setResult(res.data);
+      setProof(null);
+      setStep("done");
+      return;
+    }
+    setApiError(res.error ?? "generic");
+    // A proof the server rejected (expired/invalid) is dropped, so the next submit re-verifies.
+    if (res.error === "otp_invalid" || res.error === "otp_expired") {
+      setProof(null);
+      setStep("form");
+    } else setStep("saveFailed");
+  }
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -50,30 +96,25 @@ export default function RegisterPage() {
     if (lastDonated && lastDonated > todayIso()) next.lastDonated = t.form.dateFuture;
     if (!consent) next.consent = t.form.acceptConsent;
     setErrors(next);
-    if (Object.keys(next).length > 0 || !phone) return;
+    const firstBad = (Object.keys(FIELD_IDS) as Field[]).find((f) => next[f]);
+    if (firstBad) {
+      // A1: take the person straight to the first problem.
+      document.getElementById(FIELD_IDS[firstBad])?.focus();
+      return;
+    }
+    if (!phone) return;
+    if (proof && proof.phone === phone && proof.expiresAt > Date.now() + 15_000) {
+      void save(proof.value); // still verified: no new SMS
+      return;
+    }
     setVerifiedPhone(phone);
     setStep("otp");
   }
 
-  async function onVerified(proof: string) {
-    setStep("saving");
-    const res = await apiCall<{ editToken: string; existing: boolean }>("/api/donors", "POST", {
-      proof,
-      name,
-      bloodGroup,
-      area,
-      location,
-      available,
-      lastDonated: lastDonated || null,
-      consent,
-    });
-    if (res.ok && res.data) {
-      setResult(res.data);
-      setStep("done");
-    } else {
-      setApiError(res.error ?? "generic");
-      setStep("form");
-    }
+  async function onVerified(value: string) {
+    // The server's proof lifetime is 10 minutes; keep a safety margin on this side.
+    setProof({ value, phone: verifiedPhone ?? "", expiresAt: Date.now() + 9 * 60_000 });
+    await save(value);
   }
 
   if (step === "done" && result) {
@@ -96,7 +137,26 @@ export default function RegisterPage() {
   if (step === "otp" && verifiedPhone) {
     return (
       <div className="relative -mt-14">
-        <OtpVerification phone={verifiedPhone} onVerified={onVerified} onCancel={() => setStep("form")} />
+        <OtpVerification phone={verifiedPhone} purpose="register" onVerified={onVerified} onCancel={() => setStep("form")} />
+      </div>
+    );
+  }
+
+  if (step === "saveFailed") {
+    return (
+      <div className="relative -mt-14">
+        <div className={`${cardClass} space-y-4`}>
+          <p role="alert" className="text-base font-medium text-ink">
+            {t.register.saveFailed}
+          </p>
+          {apiError && <p className="text-sm text-muted">{errorMessage(apiError)}</p>}
+          <button type="button" className={`${btnPrimary} w-full`} onClick={() => proof && void save(proof.value)}>
+            {t.register.retrySave}
+          </button>
+          <button type="button" className={`${btnSecondary} w-full`} onClick={() => setStep("form")}>
+            {t.register.editForm}
+          </button>
+        </div>
       </div>
     );
   }
@@ -114,9 +174,6 @@ export default function RegisterPage() {
     <form onSubmit={onSubmit} noValidate className={`${cardClass} space-y-6`}>
       <p className="text-base text-muted">{t.register.intro}</p>
 
-      {!isFirebaseConfigured() && (
-        <p className="rounded-2xl bg-page p-4 text-base text-ink">{t.search.notConfigured}</p>
-      )}
       {apiError && (
         <p role="alert" className="rounded-2xl border border-accent bg-accent-soft p-4 font-medium text-accent-deep">
           {errorMessage(apiError)}
@@ -129,14 +186,22 @@ export default function RegisterPage() {
         </label>
         <input
           id="name"
+          aria-invalid={errors.name ? true : undefined}
+          aria-describedby={errors.name ? "name-error" : undefined}
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder={t.register.namePlaceholder}
           autoComplete="name"
           maxLength={80}
+          required
+          aria-required="true"
           className={inputClass}
         />
-        {errors.name && <p className={errorTextClass}>{errors.name}</p>}
+        {errors.name && (
+          <p id="name-error" className={errorTextClass}>
+            {errors.name}
+          </p>
+        )}
       </div>
 
       <div>
@@ -145,6 +210,8 @@ export default function RegisterPage() {
         </label>
         <input
           id="phone"
+          aria-invalid={errors.phone ? true : undefined}
+          aria-describedby={errors.phone ? "phone-error" : undefined}
           value={phoneInput}
           onChange={(e) => setPhoneInput(e.target.value)}
           inputMode="tel"
@@ -153,7 +220,11 @@ export default function RegisterPage() {
           className={inputClass}
         />
         <p className="mt-1 text-sm text-muted">{t.register.phoneHelp}</p>
-        {errors.phone && <p className={errorTextClass}>{errors.phone}</p>}
+        {errors.phone && (
+          <p id="phone-error" className={errorTextClass}>
+            {errors.phone}
+          </p>
+        )}
       </div>
 
       <div>
@@ -162,6 +233,8 @@ export default function RegisterPage() {
         </label>
         <select
           id="bloodGroup"
+          aria-invalid={errors.bloodGroup ? true : undefined}
+          aria-describedby={errors.bloodGroup ? "bloodGroup-error" : undefined}
           value={bloodGroup}
           onChange={(e) => setBloodGroup(e.target.value)}
           className={inputClass}
@@ -173,7 +246,11 @@ export default function RegisterPage() {
             </option>
           ))}
         </select>
-        {errors.bloodGroup && <p className={errorTextClass}>{errors.bloodGroup}</p>}
+        {errors.bloodGroup && (
+          <p id="bloodGroup-error" className={errorTextClass}>
+            {errors.bloodGroup}
+          </p>
+        )}
       </div>
 
       <AreaAutocomplete
@@ -183,6 +260,7 @@ export default function RegisterPage() {
         placeholder={t.register.areaPlaceholder}
         required
         error={errors.area}
+        id="register-area"
       />
 
       <LocationField value={location} onChange={setLocation} copy={t.register.location} />
@@ -200,26 +278,42 @@ export default function RegisterPage() {
         </label>
         <input
           id="lastDonated"
+          aria-invalid={errors.lastDonated ? true : undefined}
+          aria-describedby={errors.lastDonated ? "lastDonated-error" : undefined}
           type="date"
           max={todayIso()}
           value={lastDonated}
           onChange={(e) => setLastDonated(e.target.value)}
           className={inputClass}
         />
-        {errors.lastDonated && <p className={errorTextClass}>{errors.lastDonated}</p>}
+        {errors.lastDonated && (
+          <p id="lastDonated-error" className={errorTextClass}>
+            {errors.lastDonated}
+          </p>
+        )}
       </div>
 
       <div>
         <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-line bg-surface p-4">
           <input
+            id="consent"
             type="checkbox"
             checked={consent}
+            aria-invalid={errors.consent ? true : undefined}
+            aria-describedby={errors.consent ? "consent-error" : undefined}
             onChange={(e) => setConsent(e.target.checked)}
             className="mt-0.5 h-7 w-7 shrink-0 accent-[#b91c1c]"
           />
           <span className="text-base text-ink">{t.register.consent}</span>
         </label>
-        {errors.consent && <p className={errorTextClass}>{errors.consent}</p>}
+        <Link href="/privacy" target="_blank" className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-accent underline">
+          {t.register.privacyLink} {"↗"}
+        </Link>
+        {errors.consent && (
+          <p id="consent-error" className={errorTextClass}>
+            {errors.consent}
+          </p>
+        )}
       </div>
 
       <button type="submit" className={`${btnPrimary} w-full`}>

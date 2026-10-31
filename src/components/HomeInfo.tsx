@@ -40,6 +40,17 @@ export default function HomeInfo() {
         </ul>
       </section>
 
+      {/* L3: what Rokto is (and isn't). The eligibility text itself is for the owner and a medical
+          advisor to write; until then it shows as a marked placeholder. */}
+      <section aria-labelledby="before-donating" className="border-l-2 border-accent/60 pl-4">
+        <h2 id="before-donating" className="text-sm font-semibold text-ink">
+          {t.eligibility.title}
+        </h2>
+        <p className="mt-2 max-w-prose text-sm leading-relaxed text-muted">{t.eligibility.disclaimer}</p>
+        <h3 className="mt-3 text-sm font-semibold text-ink">{t.eligibility.whoTitle}</h3>
+        <p className="mt-1 max-w-prose text-sm leading-relaxed text-muted">{t.eligibility.whoBody}</p>
+      </section>
+
       {/* Donors who lost their edit link used to have to find a grey link at the bottom of
           /search to get a new one. Most never did, so their details went stale instead. */}
       <section aria-labelledby="already-registered" className="border-l-2 border-accent/60 pl-4">

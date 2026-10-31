@@ -6,22 +6,25 @@ import { useErrorMessage, useLocale, useT } from "@/components/LocaleProvider";
 import { fmt } from "@/i18n";
 import { formatNumber } from "@/i18n/locale";
 import { formatLocalPhone } from "@/lib/phone";
-import { usePhoneOtp } from "@/lib/usePhoneOtp";
+import { onlyDigits } from "@/lib/digits";
+import { usePhoneOtp, type OtpPurpose } from "@/lib/usePhoneOtp";
 import { btnPrimary, cardClass, errorTextClass, inputClass, labelClass } from "./styles";
 
 interface Props {
   phone: string; // E.164
+  /** Which endpoint the resulting proof is for (S11). */
+  purpose: OtpPurpose;
   /** Called once with a signed proof that this phone number was just verified. */
   onVerified: (proof: string) => void;
   onCancel: () => void;
 }
 
 /** Sends a code to `phone` on mount, then collects and verifies it. Reused by every OTP step. */
-export default function OtpVerification({ phone, onVerified, onCancel }: Props) {
+export default function OtpVerification({ phone, purpose, onVerified, onCancel }: Props) {
   const t = useT();
   const errorMessage = useErrorMessage();
   const { locale } = useLocale();
-  const { holder, status, errorCode, sendCode, verifyCode } = usePhoneOtp();
+  const { holder, status, errorCode, sendCode, verifyCode } = usePhoneOtp(purpose);
   const [code, setCode] = useState("");
   const [cooldown, setCooldown] = useState(OTP_RESEND_SECONDS);
   const started = useRef(false);
@@ -68,14 +71,20 @@ export default function OtpVerification({ phone, onVerified, onCancel }: Props) 
             <input
               id="otp-code"
               value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              onChange={(e) => setCode(onlyDigits(e.target.value).slice(0, 6))}
               inputMode="numeric"
               autoComplete="one-time-code"
               maxLength={6}
               autoFocus
+              aria-invalid={errorCode ? true : undefined}
+              aria-describedby={errorCode ? "otp-error" : undefined}
               className={`${inputClass} text-center text-2xl tracking-[0.5em]`}
             />
-            {errorCode && <p className={errorTextClass}>{errorMessage(errorCode)}</p>}
+            {errorCode && (
+              <p id="otp-error" role="alert" className={errorTextClass}>
+                {errorMessage(errorCode)}
+              </p>
+            )}
           </div>
           <button type="submit" disabled={busy || code.length < 6} className={`${btnPrimary} w-full`}>
             {status === "verifying" ? t.otp.verifying : t.otp.verify}
@@ -83,7 +92,11 @@ export default function OtpVerification({ phone, onVerified, onCancel }: Props) 
         </form>
       )}
 
-      {status === "idle" && errorCode && <p className={errorTextClass}>{errorMessage(errorCode)}</p>}
+      {status === "idle" && errorCode && (
+        <p role="alert" className={errorTextClass}>
+          {errorMessage(errorCode)}
+        </p>
+      )}
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
         <button type="button" onClick={onCancel} className="min-h-11 font-semibold text-accent underline">

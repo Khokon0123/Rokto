@@ -1,13 +1,17 @@
 import { requireAdmin } from "@/lib/server/adminAuth";
 import { ApiError, handle, json, readJson } from "@/lib/server/http";
-import { createTeamMember, listTeam } from "@/lib/server/team";
-import { validateTeamMember } from "@/lib/team";
+import { createTeamMember, isTeamSeeded, listTeam } from "@/lib/server/team";
+import { writeAudit } from "@/lib/server/adminDonors";
+import { sha256 } from "@/lib/server/keys";
+import { clientIp } from "@/lib/server/rateLimit";
+import { TEAM_BODY_LIMIT, validateTeamMember } from "@/lib/team";
 
 // GET /api/admin/team - everyone on /team, in order. Admin-only.
 export function GET(req: Request) {
   return handle(async () => {
     requireAdmin(req);
-    return json({ members: await listTeam() });
+    const [members, seeded] = await Promise.all([listTeam(), isTeamSeeded()]);
+    return json({ members, seeded });
   });
 }
 
@@ -15,8 +19,10 @@ export function GET(req: Request) {
 export function POST(req: Request) {
   return handle(async () => {
     requireAdmin(req);
-    const result = validateTeamMember(await readJson(req));
+    const result = validateTeamMember(await readJson(req, TEAM_BODY_LIMIT));
     if ("error" in result) throw new ApiError(400, result.error);
-    return json({ member: await createTeamMember(result.fields) });
+    const member = await createTeamMember(result.fields);
+    await writeAudit("team_add", member.id, sha256(clientIp(req)).slice(0, 16));
+    return json({ member });
   });
 }

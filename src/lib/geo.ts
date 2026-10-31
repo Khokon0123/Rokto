@@ -1,7 +1,6 @@
 // Optional "exact location" support. A donor may choose to add one on top of their required
-// area; if they do, it's fuzzed server-side (never trust the client's own rounding) before it's
-// ever written to the public `donors` doc, so a public profile can't be used to pinpoint a
-// specific house.
+// area; if they do, it's snapped to a coarse grid server-side (never trust the client's own
+// rounding) before it's stored, so a profile can't be used to pinpoint a specific house.
 
 import { DEFAULT_LOCALE, intlLocale, type Locale } from "@/i18n/locale";
 
@@ -42,20 +41,19 @@ export function isValidGeoPoint(v: unknown): v is GeoPoint {
 }
 
 /**
- * Moves a point a random distance (up to radiusMeters) in a random direction, so the stored
- * location can't be read back as someone's exact doorstep. Always applied server-side, on every
- * save - the client never gets to decide its own precision.
+ * Snaps a point to the centre of a fixed grid cell (default ~500 m). The same home always gives
+ * the same public point, so repeated saves can't be averaged back to the real location (S5),
+ * unlike random jitter. Always applied server-side; the client never chooses its own precision.
  */
-export function fuzzGeoPoint(p: GeoPoint, radiusMeters = 250): GeoPoint {
-  // sqrt(random) spreads points evenly over the disk instead of clustering near the center.
-  const distanceM = radiusMeters * Math.sqrt(Math.random());
-  const angle = Math.random() * 2 * Math.PI;
+export function snapGeoPoint(p: GeoPoint, cellMeters = 500): GeoPoint {
   const metersPerDegreeLat = 111_320;
-  const metersPerDegreeLng = metersPerDegreeLat * Math.cos((p.lat * Math.PI) / 180);
-  return {
-    lat: p.lat + (distanceM * Math.cos(angle)) / metersPerDegreeLat,
-    lng: p.lng + (distanceM * Math.sin(angle)) / metersPerDegreeLng,
-  };
+  // A fixed reference latitude (Chittagong) keeps the longitude step identical for every point,
+  // so cells never shift with the input.
+  const metersPerDegreeLng = metersPerDegreeLat * Math.cos((22.5 * Math.PI) / 180);
+  const stepLat = cellMeters / metersPerDegreeLat;
+  const stepLng = cellMeters / metersPerDegreeLng;
+  const snap = (v: number, step: number) => Number(((Math.floor(v / step) + 0.5) * step).toFixed(6));
+  return { lat: snap(p.lat, stepLat), lng: snap(p.lng, stepLng) };
 }
 
 /** "450 m" under a kilometer, "3.2 km" above it - in the page's own digits and units,

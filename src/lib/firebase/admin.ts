@@ -28,6 +28,10 @@ function normalizePrivateKey(raw: string): string {
 function adminApp(): App {
   const existing = getApps()[0];
   if (existing) return existing;
+  // Tests and local e2e run against the Firestore emulator: no credentials, never production data.
+  if (process.env.FIRESTORE_EMULATOR_HOST) {
+    return initializeApp({ projectId: process.env.FIREBASE_ADMIN_PROJECT_ID || "demo-rokto" });
+  }
   const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
   const privateKeyRaw = process.env.FIREBASE_ADMIN_PRIVATE_KEY;

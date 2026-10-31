@@ -9,7 +9,9 @@ import { btnPrimary, btnSecondary } from "./styles";
 export default function EditLinkCard({ token }: { token: string }) {
   const t = useT();
   const [copied, setCopied] = useState(false);
-  const path = `/edit/${token}`;
+  // S6: the token lives in the #fragment, which browsers never send to the server, so it can't
+  // end up in hosting/CDN logs. /edit/<token> links issued before this change still work.
+  const path = `/edit#${token}`;
   const url = typeof window === "undefined" ? path : `${window.location.origin}${path}`;
 
   async function copy() {
@@ -33,6 +35,7 @@ export default function EditLinkCard({ token }: { token: string }) {
         aria-label={t.link.title}
         className="mt-3 block min-h-14 w-full rounded-2xl border border-line bg-surface px-4 text-sm text-ink"
       />
+      <p className="mt-3 text-sm font-semibold text-accent-deep">{t.link.onlySelf}</p>
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         <button type="button" onClick={copy} className={btnPrimary}>
           {copied ? t.link.copied : t.link.copy}

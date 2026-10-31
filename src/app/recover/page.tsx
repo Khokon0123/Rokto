@@ -25,6 +25,7 @@ export default function RecoverPage() {
     const normalized = normalizeBdPhone(phoneInput);
     if (!normalized) {
       setError("phone_invalid");
+      document.getElementById("phone")?.focus();
       return;
     }
     setError(null);
@@ -60,7 +61,7 @@ export default function RecoverPage() {
     return (
       <div className="space-y-4">
         <h1 className="text-2xl font-bold">{t.recover.title}</h1>
-        <OtpVerification phone={phone} onVerified={onVerified} onCancel={() => setStep("phone")} />
+        <OtpVerification phone={phone} purpose="recover" onVerified={onVerified} onCancel={() => setStep("phone")} />
       </div>
     );
   }
@@ -84,9 +85,15 @@ export default function RecoverPage() {
           inputMode="tel"
           autoComplete="tel"
           placeholder="01XXXXXXXXX"
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? "phone-error" : undefined}
           className={inputClass}
         />
-        {error && <p className={errorTextClass}>{errorMessage(error)}</p>}
+        {error && (
+          <p id="phone-error" role="alert" className={errorTextClass}>
+            {errorMessage(error)}
+          </p>
+        )}
       </div>
       <button type="submit" className={`${btnPrimary} w-full`}>
         {t.recover.submit}

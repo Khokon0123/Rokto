@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useT } from "@/components/LocaleProvider";
-import { ORGS } from "@/config/app";
+import { CONTACT_EMAIL, ORGS } from "@/config/app";
 import { fmt } from "@/i18n";
 
 /**
@@ -39,7 +39,7 @@ function OrgCredit() {
                   rel="noopener noreferrer"
                   aria-label={org.name}
                   title={org.name}
-                  className="rounded-full transition-transform hover:scale-105 focus-visible:outline-white"
+                  className="rounded-full motion-safe:transition-transform motion-safe:hover:scale-105 focus-visible:outline-white"
                 >
                   {logo}
                 </a>
@@ -83,11 +83,25 @@ export default function SiteFooter() {
           </Link>
         </div>
       )}
-      <div className="mx-auto flex w-full max-w-2xl flex-wrap items-center justify-center gap-x-1.5 gap-y-1 px-4 pb-5 pt-3 text-center text-sm text-white/90">
+      <div className="mx-auto flex w-full max-w-2xl flex-wrap items-center justify-center gap-x-1.5 gap-y-1 px-4 pb-2 pt-3 text-center text-sm text-white/90">
         {before && <span>{before}</span>}
         <OrgCredit />
         {after && <span>{after}</span>}
       </div>
+      <nav
+        aria-label={t.nav.privacy}
+        className="mx-auto flex w-full max-w-2xl flex-wrap items-center justify-center gap-x-4 px-4 pb-5 text-center text-sm text-white/85"
+      >
+        <Link href="/privacy" className="inline-flex min-h-11 items-center underline focus-visible:outline-white">
+          {t.nav.privacy}
+        </Link>
+        <Link href="/terms" className="inline-flex min-h-11 items-center underline focus-visible:outline-white">
+          {t.nav.terms}
+        </Link>
+        <a href={`mailto:${CONTACT_EMAIL}`} className="inline-flex min-h-11 items-center underline focus-visible:outline-white">
+          {fmt(t.footer.contact, { email: CONTACT_EMAIL })}
+        </a>
+      </nav>
     </footer>
   );
 }

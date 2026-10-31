@@ -1,8 +1,8 @@
 "use client";
 
 import { useId, useMemo, useState, type KeyboardEvent } from "react";
-import { useT } from "@/components/LocaleProvider";
-import { filterAreas, getArea, type Area, type AreaGroup } from "@/lib/areas";
+import { useLocale, useT } from "@/components/LocaleProvider";
+import { areaLabel, filterAreas, getArea, type Area, type AreaGroup } from "@/lib/areas";
 import { errorTextClass, inputClass, labelClass } from "./styles";
 
 interface Props {
@@ -13,6 +13,8 @@ interface Props {
   placeholder?: string;
   required?: boolean;
   error?: string | null;
+  /** Fixed id for the text input, so a form can move focus to it after a failed submit (A1). */
+  id?: string;
 }
 
 /**
@@ -20,19 +22,21 @@ interface Props {
  * the donor register / edit forms. Free text is never emitted: search depends on donor profiles
  * and queries holding exactly the same area ids, so typing only filters; you must pick a row.
  */
-export default function AreaAutocomplete({ value, onChange, label, placeholder, required, error }: Props) {
+export default function AreaAutocomplete({ value, onChange, label, placeholder, required, error, id }: Props) {
   const t = useT();
+  const { locale } = useLocale();
+  const labelOf = (a: Area) => areaLabel(a.id, locale);
   const GROUP_LABEL: Record<AreaGroup, string> = {
     city: t.area.groupCity,
     district: t.area.groupDistrict,
   };
   const uid = useId();
-  const inputId = `${uid}-input`;
+  const inputId = id ?? `${uid}-input`;
   const listId = `${uid}-list`;
   const optionId = (areaId: string) => `${uid}-opt-${areaId}`;
 
   const selected = value ? getArea(value) : undefined;
-  const selectedLabel = selected?.label ?? "";
+  const selectedLabel = selected ? labelOf(selected) : "";
 
   const [text, setText] = useState(selectedLabel);
   const [prevLabel, setPrevLabel] = useState(selectedLabel);
@@ -62,8 +66,8 @@ export default function AreaAutocomplete({ value, onChange, label, placeholder, 
   }
 
   function choose(area: Area) {
-    setText(area.label);
-    setPrevLabel(area.label);
+    setText(labelOf(area));
+    setPrevLabel(labelOf(area));
     setTyped(false);
     setOpen(false);
     onChange(area.id);
@@ -129,6 +133,7 @@ export default function AreaAutocomplete({ value, onChange, label, placeholder, 
           aria-autocomplete="list"
           aria-activedescendant={open && active ? optionId(active.id) : undefined}
           aria-invalid={error ? true : undefined}
+          aria-describedby={error ? `${uid}-error` : undefined}
           aria-required={required}
           autoComplete="off"
           autoCorrect="off"
@@ -198,7 +203,7 @@ export default function AreaAutocomplete({ value, onChange, label, placeholder, 
                       onMouseEnter={() => setActiveIndex(flat.indexOf(area))}
                       onClick={() => choose(area)}
                     >
-                      {area.label}
+                      {labelOf(area)}
                     </li>
                   ))}
                 </ul>
@@ -208,7 +213,11 @@ export default function AreaAutocomplete({ value, onChange, label, placeholder, 
         </ul>
       )}
 
-      {error && <p className={errorTextClass}>{error}</p>}
+      {error && (
+        <p id={`${uid}-error`} className={errorTextClass}>
+          {error}
+        </p>
+      )}
     </div>
   );
 }
