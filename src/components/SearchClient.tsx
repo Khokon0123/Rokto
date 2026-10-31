@@ -291,7 +291,7 @@ export default function SearchClient() {
               {fmt(t.search.truncated, { count: formatNumber(results.length, locale) })}
             </p>
           )}
-          <ul className={`mt-3 space-y-3 transition-opacity ${stale ? "pointer-events-none opacity-40" : ""}`}>
+          <ul className={`mt-3 space-y-3 motion-safe:transition-opacity ${stale ? "pointer-events-none opacity-40" : ""}`}>
             {displayed.map((r) => (
               <DonorCard key={r.donor.id} result={r} stale={stale} />
             ))}
