@@ -3,21 +3,24 @@
 /* Calm, clinical-but-warm: light gray page, white surfaces, ONE deep-red accent.
    Light only on purpose: reads best in bright daylight and on battery-saver screens. */
 @theme {
-  --color-page: #f3f4f6;
+  --color-page: #f6f4f3;
   --color-surface: #ffffff;
-  --color-ink: #111827;
-  --color-muted: #4b5563;
-  --color-line: #d1d5db;
-  --color-accent: #b91c1c;
-  --color-accent-dark: #991b1b;
-  --color-accent-deep: #7f1d1d;
-  --color-accent-soft: #fef2f2;
+  --color-ink: #1e1716;
+  --color-muted: #4f4644;
+  --color-line: #e7e1df;
+  --color-accent: #a8261f;
+  --color-accent-dark: #7e1b16;
+  --color-accent-deep: #5c1310;
+  --color-accent-soft: #fbedec;
   /* soft raised look for cards; a stronger one for the search card that sits over the hero band */
   --shadow-card: 0 1px 2px rgb(17 24 39 / 0.06), 0 8px 20px -6px rgb(17 24 39 / 0.12);
   --shadow-lift: 0 2px 4px rgb(17 24 39 / 0.06), 0 16px 36px -10px rgb(127 29 29 / 0.35);
   /* Inter has no Bengali glyphs, so Bengali characters fall through to Anek Bangla - a modern,
      legible Bengali UI typeface - within the same text run. No per-language font classes needed. */
   --font-sans: var(--font-inter), var(--font-anek-bangla), system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Homepage only. Hind Siliguri is the redesign's Bengali face; every other page keeps Anek
+     Bangla, so this is opt-in through the `font-home` class rather than a site-wide swap. */
+  --font-home: var(--font-inter), var(--font-hind-siliguri), system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 html {

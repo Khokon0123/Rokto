@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Anek_Bangla, Inter } from "next/font/google";
+import { Anek_Bangla, Hind_Siliguri, Inter } from "next/font/google";
 import "./globals.css";
 import { LocaleProvider } from "@/components/LocaleProvider";
 import SiteFooter from "@/components/SiteFooter";
@@ -16,6 +16,13 @@ const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 // default system Bengali fallback. Only Bengali glyphs use it (see --font-sans in globals.css) -
 // Latin text keeps rendering in Inter.
 const anekBangla = Anek_Bangla({ variable: "--font-anek-bangla", weight: "variable", subsets: ["bengali"] });
+// Homepage redesign only: exposed as a CSS variable here, applied by the `font-home` class on the
+// homepage. Declaring it does not change any other page's typography.
+const hindSiliguri = Hind_Siliguri({
+  variable: "--font-hind-siliguri",
+  weight: ["400", "500", "600", "700"],
+  subsets: ["bengali"],
+});
 
 // Absolute base for every generated URL (SITE_URL, from NEXT_PUBLIC_SITE_URL). Without it Next
 // emits relative og:image paths, which Facebook, Messenger and WhatsApp all reject.
@@ -61,7 +68,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     // suppressHydrationWarning: browser extensions (coupon/reward tools, translators) add attributes to <html>
     // before React loads, which triggers a harmless dev-only mismatch warning.
-    <html lang={locale} className={`${inter.variable} ${anekBangla.variable} h-full antialiased`} suppressHydrationWarning>
+    <html lang={locale} className={`${inter.variable} ${anekBangla.variable} ${hindSiliguri.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="flex min-h-full flex-col">
         <LocaleProvider initialLocale={locale}>
           <SiteHeader />

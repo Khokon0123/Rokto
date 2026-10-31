@@ -25,14 +25,17 @@ export default function SiteHeader() {
           : pathname === "/team"
             ? t.hero.team
             : null;
+  const isHome = pathname === "/";
   const showRegister = pathname !== "/register"; // a link to the page you're already on would do nothing
   const showTeam = pathname !== "/team";
 
   return (
     <header
-      className={`rounded-b-[2rem] bg-gradient-to-b from-accent to-accent-dark text-white ${
-        headline ? "pb-14" : "pb-6"
-      }`}
+      // Homepage redesign: a deeper band with a wider corner radius, so the action cards can sit
+      // over its bottom edge. Every other route keeps exactly the band it had before.
+      className={`bg-gradient-to-b from-accent to-accent-dark text-white ${
+        isHome ? "rounded-b-[2.25rem] pb-28" : "rounded-b-[2rem]"
+      } ${!isHome && headline ? "pb-14" : ""} ${!isHome && !headline ? "pb-6" : ""}`}
     >
       <div className="mx-auto w-full max-w-2xl px-4 pt-4">
         <div className="flex items-center justify-between gap-3">
@@ -75,8 +78,15 @@ export default function SiteHeader() {
           </div>
         </div>
         {headline && (
-          <h1 className="mt-7 max-w-md text-4xl font-extrabold leading-[1.1] tracking-tight">{headline}</h1>
+          <h1
+            className={`mt-7 font-extrabold leading-[1.15] tracking-tight ${
+              isHome ? "max-w-xl text-[2rem] sm:text-5xl" : "max-w-md text-4xl"
+            }`}
+          >
+            {headline}
+          </h1>
         )}
+        {isHome && <p className="mt-3 max-w-md text-base leading-relaxed text-white/85">{t.home.heroLede}</p>}
       </div>
     </header>
   );

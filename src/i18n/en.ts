@@ -2,7 +2,7 @@
 // Templates use {name} placeholders; fill them with fmt() from ./index.
 export const en = {
   hero: {
-    home: "Find a blood donor near you",
+    home: "Find blood donors in Chattogram",
     register: "Register as a donor",
     team: "The team behind Rokto",
   },
@@ -30,10 +30,23 @@ export const en = {
       registerBody: "Takes about a minute, and could help save a life.",
       registerCta: "Register",
     },
-    whyTitle: "Why Rokto exists",
+    heroLede: "Pick a blood group and an area, then contact the donor directly. No sign-up needed.",
+    urgentTag: "For emergencies",
+    registerPoints: [
+      "Takes about a minute",
+      "Mark yourself unavailable any time",
+      "Your number is not openly listed",
+    ],
+    whyTitle: "Why Rokto",
+    whyHeading: "The donors are out there. Finding them is the hard part.",
+    beforeLabel: "Before",
+    beforeBody: "Facebook post, wait for shares, call a friend of a friend, hours pass.",
+    afterLabel: "Now",
+    afterBody: "Pick group and area, see ready donors, call directly.",
+    helpEyebrow: "You can help too",
     whyBody:
       "When someone in Chittagong urgently needs blood, finding a willing, compatible donor nearby often comes down to luck: a scattered Facebook post, or a friend who knows a friend. The donors are already here. Rokto just makes them findable, with a simple, always-open directory so help is a search away, not a scramble.",
-    helpTitle: "How you can help",
+    helpTitle: "Three ways to show up",
     helpItems: [
       {
         title: "Register as a donor",
@@ -41,7 +54,7 @@ export const en = {
       },
       {
         title: "Share Rokto with your community",
-        body: "Mosque groups, college classes, workplace chats, family groups. The more people who know about it, the more useful it becomes.",
+        body: "Mosque, temple, vihara and church groups, college classes, workplace chats, family groups.",
       },
       {
         title: "Pass along the link, not just a post",
@@ -313,6 +326,11 @@ export const en = {
     cancel: "Cancel",
   },
   eligibility: {
+    eyebrow: "Before giving or receiving blood",
+    sectionTitle: "Safety first",
+    connectTitle: "Rokto only connects people",
+    noneFoundTitle: "Cannot find anyone?",
+    noneFoundBody: "Contact your nearest hospital blood bank directly.",
     title: "Before you donate or ask for blood",
     disclaimer: "Rokto only helps people find each other. It does not check donors' health. Anyone receiving blood must go through a hospital or blood bank for screening and cross-matching.",
     whoTitle: "Who can donate",

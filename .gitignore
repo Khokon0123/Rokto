@@ -55,3 +55,6 @@ next-env.d.ts
 *.log
 firebase-debug.log
 firestore-debug.log
+
+# Stale build output left behind by an interrupted `next build`.
+.next-stale-claude/
