@@ -5,13 +5,14 @@ import type { BloodGroup } from "@/lib/bloodGroups";
 import { adminDb } from "@/lib/firebase/admin";
 import { snapGeoPoint, type GeoPoint } from "@/lib/geo";
 import type { EditableProfile } from "@/lib/types";
-import { invalidateDirectory } from "./directory";
+import { invalidateDirectory, writeDirectory } from "./directory";
 import { ApiError } from "./http";
 import { COL, phoneKey } from "./keys";
 import { claimProof, verifyPhoneProof } from "./otp";
 import { generateEditToken, hashToken, TOKEN_PATTERN } from "./token";
 
-// donors/{id}           PRIVATE (S2). Only the server reads it; search is served from a cache.
+// donors/{id}           PRIVATE (S2). Only the server reads it.
+// directory/{shard}     PRIVATE. Pre-built list of available donors for search (see directory.ts).
 // donorSecrets/{id}     PRIVATE. Hash of the edit token.
 // phoneIndex/{sha(ph)}  PRIVATE. { donorId }: the single source of truth for "one profile per phone".
 // Every ownership check and the mutation it guards happen inside ONE transaction (D1, D2, D3).
@@ -67,10 +68,12 @@ export async function registerDonor(proofInput: unknown, fields: DonorFields): P
     if (existing?.exists) {
       tx.update(existing.ref, data);
       tx.set(secretRef(existing.id), { tokenHash, rotatedAt: now });
+      writeDirectory(tx, db(), existing.id, { ...data, phone });
       return { editToken, existing: true };
     }
     const ref = db().collection(COL.donors).doc();
     tx.set(ref, { ...data, phone, createdAt: now });
+    writeDirectory(tx, db(), ref.id, { ...data, phone });
     tx.set(secretRef(ref.id), { tokenHash, rotatedAt: now });
     tx.set(indexRef(phone), { donorId: ref.id });
     return { editToken, existing: false };
@@ -145,7 +148,9 @@ export async function updateProfileByToken(token: unknown, patch: ProfilePatch):
     if (phoneWrites) updates.phone = proof!.phone;
     updates.updatedAt = FieldValue.serverTimestamp();
     tx.update(ref, updates);
-    return toEditable({ ...data, ...updates, lastDonated: "lastDonated" in updates ? updates.lastDonated : data.lastDonated });
+    const merged = { ...data, ...updates };
+    writeDirectory(tx, db(), ref.id, merged);
+    return toEditable(merged);
   });
   invalidateDirectory();
   return profile;
@@ -181,6 +186,7 @@ export async function deleteProfileByToken(token: unknown): Promise<void> {
     tx.delete(ref);
     tx.delete(secretRef(ref.id));
     if (index.data()?.donorId === ref.id) tx.delete(index.ref);
+    writeDirectory(tx, db(), ref.id, null);
   });
   invalidateDirectory();
 }
@@ -195,6 +201,7 @@ export async function deleteDonorById(id: string, block: { reason: string } | nu
     tx.delete(snap.ref);
     tx.delete(secretRef(id));
     if (index?.data()?.donorId === id) tx.delete(index.ref);
+    writeDirectory(tx, db(), id, null);
     if (block && phone) tx.set(blockedRef(phone), { reason: block.reason, at: FieldValue.serverTimestamp() });
     return { deleted: true };
   });

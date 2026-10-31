@@ -30,7 +30,13 @@ export async function sendOtpSms(phoneE164: string, code: string, ttlMinutes: nu
 
   if (provider === "console") {
     if (isProduction()) throw new ApiError(503, "sms_unavailable");
-    // Development only. The code goes to the terminal so testing needs no real SMS.
+    // Development only. The code goes to the terminal so testing needs no real SMS. The e2e suite
+    // reads codes from E2E_SMS_OUTBOX instead (never available in production, see above).
+    if (process.env.E2E_SMS_OUTBOX) {
+      const { appendFileSync } = await import("node:fs");
+      appendFileSync(process.env.E2E_SMS_OUTBOX, `${JSON.stringify({ phone: phoneE164, code })}\n`);
+      return;
+    }
     console.info(`\n[DEV SMS] to ${phoneE164}: ${message}\n`);
     return;
   }

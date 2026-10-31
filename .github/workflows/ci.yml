@@ -1,0 +1,35 @@
+name: CI
+
+# H1: the release gate. Every push and pull request must pass all of this before deploying.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4 # the Firestore emulator needs Java
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - name: Dependency audit (no high or critical)
+        run: npm audit --omit=dev --audit-level=high
+      - run: npm run lint
+      - run: npm run typecheck
+      - name: Unit + component tests (with coverage)
+        run: npm run test:coverage
+      - name: Firestore rules + concurrency tests (emulator)
+        run: npm run test:emulator
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: End-to-end (emulator, console SMS)
+        run: npm run test:e2e

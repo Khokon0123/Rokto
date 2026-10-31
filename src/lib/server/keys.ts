@@ -11,6 +11,7 @@ export const COL = {
   usedProofs: "usedProofs", // {jti} -> { purpose, subject, uses, expireAt }  (S11)
   reports: "reports", // L2
   audit: "adminAudit", // S7
+  directory: "directory", // {shard} -> { entries: { [donorId]: row } }  (S2/S4 search list)
   team: "team",
   meta: "meta",
 } as const;

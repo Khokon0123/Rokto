@@ -8,7 +8,7 @@ service cloud.firestore {
     // which bypasses these rules after checking OTP proofs, edit tokens or the admin session.
     //
     // Private collections, all covered by the catch-all below:
-    //   donors, donorSecrets (edit-token hashes), phoneIndex (one profile per phone),
+    //   donors, directory (pre-built search list), donorSecrets (edit-token hashes), phoneIndex (one profile per phone),
     //   blockedPhones, otpChallenges, usedProofs, rateLimits, reports, adminAudit, team, meta.
     match /{document=**} {
       allow read, write: if false;

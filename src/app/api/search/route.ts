@@ -2,15 +2,14 @@ import { PHONE_REVEAL_MODE } from "@/config/app";
 import { parseSearchParams, selectResults, type SearchResponse } from "@/lib/search";
 import { loadDirectory } from "@/lib/server/directory";
 import { handle } from "@/lib/server/http";
-import { clientIp, hit } from "@/lib/server/rateLimit";
 import { NextResponse } from "next/server";
 
 // GET /api/search?group=&area=&compatible=1
 // Answered from the cached directory (S2/S4): no phones in "tap" mode, unavailable donors never.
 export function GET(req: Request) {
   return handle(async () => {
-    // Generous: a person in an emergency changes filters a lot. This only stops scripted harvesting.
-    await hit(`search:ip:${clientIp(req)}`, 300, 3600);
+    // No per-visitor rate limit here on purpose: answers come from a cache and carry no phone
+    // numbers, and a Firestore-backed counter would cost a read + write per search (S4).
     const params = parseSearchParams(new URL(req.url).searchParams);
     const { results, total, truncated } = selectResults(await loadDirectory(), params);
 

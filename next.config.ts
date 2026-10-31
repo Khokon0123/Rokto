@@ -25,7 +25,12 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: [
           // Set CSP_REPORT_ONLY=1 for a first deploy to watch for violations without breaking anything.
-          { key: process.env.CSP_REPORT_ONLY === "1" ? "Content-Security-Policy-Report-Only" : "Content-Security-Policy", value: csp },
+          // In development it is always report-only: the dev server's hot reload needs things a
+          // production page never does.
+          {
+            key: isDev || process.env.CSP_REPORT_ONLY === "1" ? "Content-Security-Policy-Report-Only" : "Content-Security-Policy",
+            value: csp,
+          },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },

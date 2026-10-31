@@ -3,7 +3,7 @@ import "server-only";
 // H2: production configuration is checked in one place, loudly, instead of failing late and
 // quietly (a "healthy" site whose search, SMS or CAPTCHA is silently off).
 
-export const isProduction = () => process.env.NODE_ENV === "production" && process.env.ROKTO_ALLOW_DEV_CONFIG !== "1";
+export const isProduction = () => process.env.NODE_ENV === "production";
 
 export type Subsystem = "firebase" | "otp" | "sms" | "captcha" | "admin" | "site";
 
