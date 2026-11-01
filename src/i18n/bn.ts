@@ -33,6 +33,10 @@ export const bn: Messages = {
       registerCta: "নিবন্ধন করুন",
     },
     heroLede: "রক্তের গ্রুপ ও এলাকা বেছে নিন, তারপর সরাসরি দাতার সাথে যোগাযোগ করুন। কোনো নিবন্ধন লাগবে না।",
+    stats: {
+      registered: "নিবন্ধিত দাতা",
+      available: "এখন রক্ত দিতে প্রস্তুত",
+    },
     urgentTag: "জরুরি প্রয়োজনে",
     registerPoints: [
       "মাত্র এক মিনিট সময় লাগে",
@@ -114,6 +118,22 @@ export const bn: Messages = {
     email: "ইমেইল",
     facebook: "ফেসবুক",
   },
+  homeSearch: {
+    groupLegend: "রক্তের গ্রুপ",
+    areaLegend: "এলাকা",
+    allAreas: "সব",
+    pickGroup: "দাতা দেখতে রক্তের গ্রুপ বেছে নিন।",
+    count: "{count} জন দাতা পাওয়া গেছে",
+    countOne: "১ জন দাতা পাওয়া গেছে",
+    showMore: "আরও দেখুন",
+    empty: "কোনো দাতা পাওয়া যায়নি।",
+    emptyHintArea: "এই এলাকায় এই গ্রুপের কোনো দাতা এখনো নেই। চট্টগ্রামজুড়ে খুঁজতে “সব” বেছে নিন।",
+    emptyHintAll: "এই গ্রুপের কোনো দাতা এখনো নেই। अন্য গ্রুপ দেখুন, অথবা নিজে নিবন্ধন করুন।",
+    showAllAreas: "সব এলাকায় খুঁজুন",
+    allFilters: "সব ফিল্টার দেখুন",
+    whatsapp: "হোয়াটসঅ্যাপ",
+  },
+
   card: {
     showNumber: "ফোন নম্বর দেখুন",
     revealing: "নম্বর আনা হচ্ছে...",

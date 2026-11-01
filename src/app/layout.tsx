@@ -3,6 +3,7 @@ import { Anek_Bangla, Hind_Siliguri, Inter } from "next/font/google";
 import "./globals.css";
 import { LocaleProvider } from "@/components/LocaleProvider";
 import SiteFooter from "@/components/SiteFooter";
+import { heroStats } from "@/lib/server/stats";
 import SiteHeader from "@/components/SiteHeader";
 import { APP_NAME } from "@/config/app";
 import { SITE_URL } from "@/config/site";
@@ -64,6 +65,12 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await requestLocale();
+  // Read here rather than in the homepage so the tiles can live INSIDE the hero band, which
+  // then grows to fit them instead of relying on a fixed padding that a longer label overflows.
+  // Cheap: both counts sit behind unstable_cache for SEARCH_CACHE_SECONDS and share the
+  // "donor-directory" tag, so this is ~one Firestore aggregate per cache period for the whole
+  // site, and every route is already server-rendered on demand.
+  const stats = await heroStats();
 
   return (
     // suppressHydrationWarning: browser extensions (coupon/reward tools, translators) add attributes to <html>
@@ -71,7 +78,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang={locale} className={`${inter.variable} ${anekBangla.variable} ${hindSiliguri.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="flex min-h-full flex-col">
         <LocaleProvider initialLocale={locale}>
-          <SiteHeader />
+          <SiteHeader stats={stats} />
           <main className="mx-auto w-full max-w-2xl flex-1 px-4 pb-12 pt-6">{children}</main>
           <SiteFooter />
         </LocaleProvider>

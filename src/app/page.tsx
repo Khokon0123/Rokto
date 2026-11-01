@@ -1,11 +1,11 @@
 import HomeChoice from "@/components/HomeChoice";
 import HomeInfo from "@/components/HomeInfo";
 
-// The homepage is just the choice: look for a donor, or register as one. The search tool itself
-// lives at /search, so nobody's details load until someone deliberately asks to search.
+// The find card carries the search itself; the hero (headline, lede, stat tiles) belongs to
+// SiteHeader, so the red band can size itself around whatever it holds.
 //
 // `font-home` scopes the redesign's Bengali face (Hind Siliguri) to this page; every other route
-// keeps Anek Bangla. The negative margin lifts the action cards over the hero band's bottom edge.
+// keeps Anek Bangla. The negative margin lifts the cards over the hero band's bottom edge.
 export default function Home() {
   return (
     <div className="font-home">

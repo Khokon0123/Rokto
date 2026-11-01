@@ -2,15 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import HeroStats from "@/components/HeroStats";
 import { useLocale, useT } from "@/components/LocaleProvider";
 import { APP_NAME, APP_NAME_BN } from "@/config/app";
+import type { HeroStatsData } from "@/lib/server/stats";
 
 /**
  * Red hero band at the top of every page. On the homepage and the register page it also carries the
  * page headline and is taller, so the white content card can overlap its rounded bottom edge.
  * Other pages (edit, recover) get the same band in a compact form.
  */
-export default function SiteHeader() {
+export default function SiteHeader({ stats }: { stats?: HeroStatsData | null }) {
   const t = useT();
   const { locale, setLocale } = useLocale();
   const otherLocale = locale === "bn" ? "en" : "bn";
@@ -87,6 +89,11 @@ export default function SiteHeader() {
           </h1>
         )}
         {isHome && <p className="mt-3 max-w-md text-base leading-relaxed text-white/85">{t.home.heroLede}</p>}
+        {isHome && stats && (
+          <div className="mt-6">
+            <HeroStats registered={stats.registered} available={stats.available} />
+          </div>
+        )}
       </div>
     </header>
   );

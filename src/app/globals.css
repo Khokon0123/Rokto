@@ -37,3 +37,33 @@ body {
   outline: 3px solid var(--color-accent);
   outline-offset: 2px;
 }
+
+/* Availability dot on the hero's "ready to donate now" tile. A slow breath, not a blink: it
+   signals the number is live without pulling the eye away from the search card below it. */
+.rokto-pulse-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  flex: none;
+  border-radius: 9999px;
+  background: #7cf2b0;
+  box-shadow: 0 0 0 0 rgb(124 242 176 / 0.55);
+  animation: rokto-pulse 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes rokto-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(124 242 176 / 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 7px rgb(124 242 176 / 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rokto-pulse-dot {
+    animation: none;
+    box-shadow: none;
+  }
+}
