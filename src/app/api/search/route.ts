@@ -5,7 +5,8 @@ import { handle } from "@/lib/server/http";
 import { NextResponse } from "next/server";
 
 // GET /api/search?group=&area=&compatible=1
-// Answered from the cached directory (S2/S4): no phones in "tap" mode, unavailable donors never.
+// Answered from the cached directory (S2/S4): no phones in "tap" mode, unavailable donors never,
+// and no donor coordinates at all - the area is the finest location this endpoint will publish.
 export function GET(req: Request) {
   return handle(async () => {
     // No per-visitor rate limit here on purpose: answers come from a cache and carry no phone
@@ -19,7 +20,6 @@ export function GET(req: Request) {
         bloodGroup: donor.bloodGroup,
         area: donor.area,
         lastDonated: donor.lastDonated ? donor.lastDonated.toISOString().slice(0, 10) : null,
-        location: donor.location,
         // "public" mode (owner decision #1): phones ride along, still never more than one page.
         phone: PHONE_REVEAL_MODE === "public" ? donor.phone : "",
     }));

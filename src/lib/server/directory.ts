@@ -40,7 +40,7 @@ async function readDirectory(): Promise<DirectoryEntry[]> {
   return out;
 }
 
-export const loadDirectory = unstable_cache(readDirectory, ["donor-directory-v2"], {
+export const loadDirectory = unstable_cache(readDirectory, ["donor-directory-v3"], {
   revalidate: SEARCH_CACHE_SECONDS,
   tags: [TAG],
 });

@@ -37,16 +37,6 @@ export default function DonorCard({ result, stale = false }: { result: SearchRes
               ? fmt(t.card.lastDonated, { date: formatDate(donor.lastDonated, locale) })
               : t.card.lastDonatedNone}
           </p>
-          {donor.location && (
-            <a
-              href={`https://www.google.com/maps?q=${donor.location.lat},${donor.location.lng}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm font-semibold text-accent underline"
-            >
-              {t.card.viewLocation} {"↗"}
-            </a>
-          )}
         </div>
       </div>
       {coolingDown && (

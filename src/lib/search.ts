@@ -21,9 +21,16 @@ export interface SearchResult {
   distanceKm?: number;
 }
 
-/** What /api/search returns (JSON-safe: dates as YYYY-MM-DD). */
+/**
+ * What /api/search returns (JSON-safe: dates as YYYY-MM-DD).
+ *
+ * `location` is deliberately absent. A donor's approximate coordinate is stored and is theirs to
+ * edit, but it is never published: the public answer carries the AREA only, and everything that
+ * needs a point on a map uses that area's centre instead. Omitted from the type, not just left
+ * out of the route, so putting it back is a deliberate act rather than an accident.
+ */
 export interface SearchResponse {
-  donors: Array<Omit<Donor, "lastDonated" | "available"> & { lastDonated: string | null }>;
+  donors: Array<Omit<Donor, "lastDonated" | "available" | "location"> & { lastDonated: string | null }>;
   total: number;
   truncated: boolean;
 }
@@ -106,7 +113,8 @@ export function fromResponse(res: SearchResponse, params: SearchParams, now = Da
   return res.donors.map((d) => {
     const lastDonated = toDate(d.lastDonated);
     return {
-      donor: { ...d, phone: d.phone ?? "", available: true, lastDonated },
+      // location: null, always. The API no longer sends one (see SearchResponse).
+      donor: { ...d, phone: d.phone ?? "", available: true, lastDonated, location: null },
       coolingDown: isCoolingDown(lastDonated, now),
       exact: !params.bloodGroup || d.bloodGroup === params.bloodGroup,
     };
@@ -115,12 +123,12 @@ export function fromResponse(res: SearchResponse, params: SearchParams, now = Da
 
 /**
  * Re-ranks by distance from `from` (opt-in: the searcher's own device location, used only in the
- * browser for this sort and never sent anywhere). Uses the donor's approximate location when they
- * shared one, otherwise their area's centre. Recent donors still sort to the bottom.
+ * browser for this sort and never sent anywhere). Distance is measured to the donor's AREA centre:
+ * the browser is never told where a donor actually is. Recent donors still sort to the bottom.
  */
 export function sortByDistance(results: SearchResult[], from: GeoPoint): SearchResult[] {
   const distanceOf = (r: SearchResult): number => {
-    const point = r.donor.location ?? getArea(r.donor.area)?.center ?? null;
+    const point = getArea(r.donor.area)?.center ?? null;
     return point ? haversineKm(from, point) : Number.POSITIVE_INFINITY;
   };
   return [...results]

@@ -55,7 +55,12 @@ function FitBounds({ bounds, fitKey }: { bounds: L.LatLngBounds | null; fitKey: 
   return null;
 }
 
-/** F4: donors at the same point (most often: area centre) share ONE marker that lists them all. */
+/**
+ * One marker per AREA, never per donor. The browser is not sent donor coordinates at all (see
+ * SearchResponse), so a pin can only ever mean "this many matching donors somewhere in this
+ * area", drawn at the area's rough centre. That is the whole privacy model of this map: a
+ * marker is a count over an area, not a person on a street.
+ */
 interface Pin {
   key: string;
   point: GeoPoint;
@@ -104,16 +109,17 @@ export default function DonorMap({
   const areaRadiusM = areaInfo?.group === "district" ? 6000 : 2000;
 
   const pins = useMemo(() => {
-    const byPoint = new Map<string, Pin>();
+    const byArea = new Map<string, Pin>();
     for (const r of results) {
-      const point = r.donor.location ?? getArea(r.donor.area)?.center ?? null;
+      // Keyed by area id, positioned at that area's centre: two donors in Khulshi are one pin,
+      // and no pin can be traced back to an individual address.
+      const point = getArea(r.donor.area)?.center ?? null;
       if (!point) continue;
-      const key = `${point.lat.toFixed(5)},${point.lng.toFixed(5)}`;
-      const pin = byPoint.get(key) ?? { key, point, results: [] };
+      const pin = byArea.get(r.donor.area) ?? { key: r.donor.area, point, results: [] };
       pin.results.push(r);
-      byPoint.set(key, pin);
+      byArea.set(r.donor.area, pin);
     }
-    return [...byPoint.values()];
+    return [...byArea.values()];
   }, [results]);
 
   const { bounds, fitKey } = useMemo(() => {

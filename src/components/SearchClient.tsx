@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import AreaAutocomplete from "@/components/AreaAutocomplete";
 import DonorCard from "@/components/DonorCard";
@@ -15,6 +16,7 @@ import { BLOOD_GROUPS, isBloodGroup, type BloodGroup } from "@/lib/bloodGroups";
 import { getCurrentPosition, type GeoPoint } from "@/lib/geo";
 import {
   fromResponse,
+  parseSearchParams,
   searchQueryString,
   sortByDistance,
   type SearchParams,
@@ -73,9 +75,17 @@ export default function SearchClient() {
   const t = useT();
   const errorMessage = useErrorMessage();
   const { locale } = useLocale();
-  const [group, setGroup] = useState<BloodGroup | "">("");
-  const [area, setArea] = useState<string | null>(null);
-  const [includeCompatible, setIncludeCompatible] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+  const query = useSearchParams();
+
+  // Seed from the URL so a shared /search?group=O%2B&area=khulshi link opens on those results.
+  // parseSearchParams is the same validator the API uses, so an unknown group or area id falls
+  // back to "no filter" rather than throwing or querying for something that cannot exist.
+  const [initial] = useState(() => parseSearchParams(new URLSearchParams(query.toString())));
+  const [group, setGroup] = useState<BloodGroup | "">(initial.bloodGroup ?? "");
+  const [area, setArea] = useState<string | null>(initial.area);
+  const [includeCompatible, setIncludeCompatible] = useState(initial.includeCompatible);
   const [attempt, setAttempt] = useState(0);
   const [nearMe, setNearMe] = useState<GeoPoint | null>(null);
   const [locating, setLocating] = useState(false);
@@ -99,6 +109,15 @@ export default function SearchClient() {
 
   const compatible = Boolean(group) && includeCompatible;
   const bloodGroup = group || null;
+
+  // Mirror the filters back into the address bar so the link can be copied at any moment.
+  // replace, not push: changing a dropdown should not add a history entry to back out of.
+  const urlQuery = searchQueryString({ bloodGroup, area, includeCompatible: compatible });
+  useEffect(() => {
+    const current = window.location.search.replace(/^\?/, "");
+    if (current === urlQuery) return;
+    router.replace(urlQuery ? `${pathname}?${urlQuery}` : pathname, { scroll: false });
+  }, [urlQuery, pathname, router]);
   // The list is opened as soon as the page loads: someone here usually needs blood now.
   const key = `${group}|${area ?? ""}|${compatible}|${attempt}`;
   // The map ignores the area filter on purpose (panning is how you explore a map); blood group still applies.

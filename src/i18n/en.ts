@@ -116,21 +116,6 @@ export const en = {
     email: "Email",
     facebook: "Facebook",
   },
-  homeSearch: {
-    groupLegend: "Blood group",
-    areaLegend: "Area",
-    allAreas: "All",
-    pickGroup: "Pick a blood group to see donors.",
-    count: "{count} donors found",
-    countOne: "1 donor found",
-    showMore: "Show more",
-    empty: "No donors found.",
-    emptyHintArea: "Nobody with this blood group is listed in that area yet. Try “All” to search across Chattogram.",
-    emptyHintAll: "Nobody with this blood group is listed yet. Try another group, or register as a donor.",
-    showAllAreas: "Search all areas",
-    allFilters: "See all filters",
-    whatsapp: "WhatsApp",
-  },
 
   card: {
     showNumber: "Show phone number",
@@ -140,7 +125,6 @@ export const en = {
     lastDonated: "Last donated: {date}",
     lastDonatedNone: "Last donation date not given",
     recent: "Donated recently, may not be ready yet",
-    viewLocation: "View approximate location",
     distanceAway: "~{distance} away",
   },
   area: {

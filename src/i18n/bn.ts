@@ -118,21 +118,6 @@ export const bn: Messages = {
     email: "ইমেইল",
     facebook: "ফেসবুক",
   },
-  homeSearch: {
-    groupLegend: "রক্তের গ্রুপ",
-    areaLegend: "এলাকা",
-    allAreas: "সব",
-    pickGroup: "দাতা দেখতে রক্তের গ্রুপ বেছে নিন।",
-    count: "{count} জন দাতা পাওয়া গেছে",
-    countOne: "১ জন দাতা পাওয়া গেছে",
-    showMore: "আরও দেখুন",
-    empty: "কোনো দাতা পাওয়া যায়নি।",
-    emptyHintArea: "এই এলাকায় এই গ্রুপের কোনো দাতা এখনো নেই। চট্টগ্রামজুড়ে খুঁজতে “সব” বেছে নিন।",
-    emptyHintAll: "এই গ্রুপের কোনো দাতা এখনো নেই। अন্য গ্রুপ দেখুন, অথবা নিজে নিবন্ধন করুন।",
-    showAllAreas: "সব এলাকায় খুঁজুন",
-    allFilters: "সব ফিল্টার দেখুন",
-    whatsapp: "হোয়াটসঅ্যাপ",
-  },
 
   card: {
     showNumber: "ফোন নম্বর দেখুন",
@@ -142,7 +127,6 @@ export const bn: Messages = {
     lastDonated: "সর্বশেষ রক্ত দিয়েছেন: {date}",
     lastDonatedNone: "সর্বশেষ রক্তদানের তারিখ দেওয়া নেই",
     recent: "সম্প্রতি রক্ত দিয়েছেন, এখনো প্রস্তুত না থাকতে পারে",
-    viewLocation: "আনুমানিক অবস্থান দেখুন",
     distanceAway: "~{distance} দূরে",
   },
   area: {
