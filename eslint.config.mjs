@@ -8,6 +8,9 @@ const eslintConfig = defineConfig([
   // Override default ignores of eslint-config-next.
   globalIgnores([
     "_to_delete/**",
+    // Leftover build output from an interrupted `next build`. Gitignored, so CI never sees it,
+    // but locally it buried the one real error under 15,000 from compiled vendor code.
+    ".next-stale-claude/**",
     // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",

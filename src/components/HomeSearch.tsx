@@ -61,10 +61,11 @@ export default function HomeSearch() {
   const enabled = Boolean(group); // a blood group is required before anyone's details load
 
   useEffect(() => {
-    if (!enabled) {
-      setLoaded(null);
-      return;
-    }
+    // No clearing of `loaded` here: setState in an effect body causes a cascading render, and
+    // it was never needed. `status` already reports "idle" whenever no group is chosen, and
+    // nothing reads `loaded` in that state. Re-picking the same group then shows its previous
+    // results instantly while the refetch below replaces them.
+    if (!enabled) return;
     let cancelled = false;
     const params: SearchParams = { bloodGroup: group || null, area, includeCompatible: false };
     void apiCall<SearchResponse>(`/api/search?${searchQueryString(params)}`, "GET").then((res) => {
