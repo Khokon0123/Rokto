@@ -9,47 +9,54 @@ import type { SearchResult } from "@/lib/search";
 import BloodBadge from "./BloodBadge";
 import CallButton from "./CallButton";
 import ReportListing from "./ReportListing";
-import { btnPrimary, btnSecondary, cardClass } from "./styles";
 
-/** `stale`: these results belong to the previous filters and a new search is loading (F1). */
+/**
+ * One donor, as a flat row. The parent <ul> draws the 1px dividers and holds the border: a
+ * bordered card inside a bordered list costs about 32px of width on a 360px phone, which is the
+ * difference between a name fitting and being truncated.
+ *
+ * `stale`: these results belong to the previous filters and a new search is loading (F1).
+ */
 export default function DonorCard({ result, stale = false }: { result: SearchResult; stale?: boolean }) {
   const t = useT();
   const { locale } = useLocale();
   const { donor, coolingDown, distanceKm } = result;
 
   return (
-    <li className={cardClass}>
-      <div className="flex items-center gap-4">
+    <li className="py-4">
+      {/* flex-wrap plus w-full/sm:w-auto on the action: below sm it wraps onto its own full-width
+          line, from sm up it sits on the same row as the name. One render, no duplicate button. */}
+      <div className="flex flex-wrap items-center gap-3">
         <BloodBadge group={donor.bloodGroup} />
-        <div className="min-w-0">
-          <p className="truncate text-lg font-bold text-ink">{donor.name}</p>
-          <p className="text-base text-ink">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-base font-bold text-ink">{donor.name}</p>
+          <p className="truncate text-sm text-ink">
             {areaLabel(donor.area, locale)}
-            {typeof distanceKm === "number" && distanceKm !== Infinity && (
+            {typeof distanceKm === "number" && Number.isFinite(distanceKm) && (
               <span className="text-muted">
                 {" "}
                 {"·"} {fmt(t.card.distanceAway, { distance: formatDistanceKm(distanceKm, locale) })}
               </span>
             )}
           </p>
-          <p className="text-sm text-muted">
-            {donor.lastDonated
-              ? fmt(t.card.lastDonated, { date: formatDate(donor.lastDonated, locale) })
-              : t.card.lastDonatedNone}
-          </p>
+          {/* Only when there is a date: "not given" on most rows was noise, not information. */}
+          {donor.lastDonated && (
+            <p className="text-xs text-muted">
+              {fmt(t.card.lastDonated, { date: formatDate(donor.lastDonated, locale) })}
+            </p>
+          )}
         </div>
-      </div>
-      {coolingDown && (
-        <p className="mt-3 rounded-xl bg-page px-3 py-2 text-sm font-medium text-muted">{t.card.recent}</p>
-      )}
-      <div className="mt-4">
         <CallButton
           donorId={donor.id}
           phone={donor.phone}
           disabled={stale}
-          className={`${coolingDown ? btnSecondary : btnPrimary} min-h-16 w-full text-lg font-bold`}
+          className="inline-flex min-h-12 w-full shrink-0 items-center justify-center rounded-xl border border-accent bg-surface px-4 text-sm font-bold text-accent hover:bg-accent-soft disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
         />
       </div>
+
+      {coolingDown && (
+        <p className="mt-2 rounded-xl bg-page px-3 py-2 text-xs font-medium text-muted">{t.card.recent}</p>
+      )}
       {!stale && <ReportListing donorId={donor.id} />}
     </li>
   );

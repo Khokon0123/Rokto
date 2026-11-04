@@ -21,7 +21,8 @@ describe("F1: stale results while a new search loads", () => {
     const call = await screen.findByRole("button", { name: "Show phone number" });
     expect(call).not.toBeDisabled();
 
-    fireEvent.change(screen.getByLabelText("Blood group"), { target: { value: "O-" } });
+    // The blood group is a row of chips now, not a select: changing the filter is a tap.
+    fireEvent.click(screen.getByRole("button", { name: "O-" }));
     await waitFor(() => expect(screen.getByText("Updating results for your new filters...")).toBeInTheDocument());
     expect(screen.getByRole("button", { name: "Show phone number" })).toBeDisabled();
     expect(screen.queryByText("1 donor")).toBeNull(); // the old count is gone
