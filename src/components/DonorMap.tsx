@@ -17,25 +17,15 @@ import CallButton from "./CallButton";
 const DEFAULT_CENTER: GeoPoint = { lat: 22.335, lng: 91.832 };
 const DEFAULT_ZOOM = 12;
 
-// H8: one icon object per (label, look), not a new one per marker per render.
-const iconCache = new Map<string, L.DivIcon>();
-function pinIcon(label: string, look: "pos" | "neg" | "dim" | "group"): L.DivIcon {
-  const k = `${look}:${label}`;
-  const hit = iconCache.get(k);
-  if (hit) return hit;
-  const bg = look === "dim" ? "#9ca3af" : look === "neg" ? "#7f1d1d" : look === "group" ? "#111827" : "#b91c1c";
-  const size = look === "group" ? 36 : 30;
-  const icon = L.divIcon({
-    className: "",
-    html: `<div style="background:${bg};color:#fff;font-weight:800;font-size:11px;width:${size}px;height:${size}px;border-radius:9999px;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.45);">${label}</div>`,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
-    popupAnchor: [0, -14],
-  });
-  iconCache.set(k, icon);
-  return icon;
-}
-const donorIcon = (r: SearchResult) => pinIcon(r.donor.bloodGroup, r.coolingDown ? "dim" : r.donor.bloodGroup.endsWith("-") ? "neg" : "pos");
+// One mark, every area, whatever it covers. A number here only ever restated what the list
+// already says, and a bigger bubble invited people to read density into rough area centres.
+const areaIcon = L.divIcon({
+  className: "",
+  html: '<div style="background:#a8261f;width:18px;height:18px;border-radius:9999px;border:3px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.45);"></div>',
+  iconSize: [18, 18],
+  iconAnchor: [9, 9],
+  popupAnchor: [0, -10],
+});
 
 const meIcon = L.divIcon({
   className: "",
@@ -167,7 +157,7 @@ export default function DonorMap({
           <Marker
             key={pin.key}
             position={pin.point}
-            icon={single ? donorIcon(first) : pinIcon(formatNumber(pin.results.length, locale), "group")}
+            icon={areaIcon}
           >
             <Popup maxWidth={280}>
               {single ? (

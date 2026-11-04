@@ -32,7 +32,7 @@ export const en = {
     },
     heroLede: "Pick a blood group and an area, then contact the donor directly. No sign-up needed.",
     stats: {
-      registered: "registered donors",
+      visitors: "visitors",
       available: "ready now",
     },
     urgentTag: "For emergencies",

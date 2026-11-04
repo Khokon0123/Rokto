@@ -1,53 +1,36 @@
 import "server-only";
-import { unstable_cache } from "next/cache";
-import { SEARCH_CACHE_SECONDS } from "@/config/app";
-import { adminDb } from "@/lib/firebase/admin";
 import { loadDirectory } from "./directory";
-import { COL } from "./keys";
+import { loadVisits } from "./visits";
 
-// Counts for the homepage hero tiles. Read-only: nothing here writes, and no schema, API or
-// query used by search changes. Two different numbers, so two different sources:
+// The two numbers in the hero band.
 //
-//   available  - the directory already IS the list of available donors (toEntry() drops anyone
-//                whose `available` is not true), so its length is the count. This reuses the
-//                exact cached read /api/search uses, which costs nothing extra.
-//   registered - every donor, available or not. count() is an aggregation: Firestore bills it
-//                per 1,000 documents scanned rather than per document, so it stays one read.
+//   available - donors marked available right now. The directory IS that list (toEntry() drops
+//               anyone whose `available` is not true), so its length is the count, taken from
+//               the same cached read /api/search uses. Costs nothing extra.
+//   visits    - how many browser sessions the homepage has counted (see visits.ts).
 //
-// Both are cached on the "donor-directory" tag, the same tag invalidateDirectory() clears after
-// any donor write, so the tiles move when someone registers instead of lagging a cache period.
-
-/** Below this many registered donors the tiles are hidden, so a thin directory doesn't advertise
- *  how thin it is. Change this one number to show them earlier. */
-export const HERO_STATS_MIN_REGISTERED = 50;
+// No "registered donors" tile any more. It overlapped with `available`, cost an extra Firestore
+// aggregate, and made a small directory read as a shortfall rather than a standing offer.
 
 export interface HeroStatsData {
-  /** Every donor on record, available or not. */
-  registered: number;
-  /** Donors currently marked available: exactly who search would return. */
+  /** Donors available right now: exactly who a search would return. */
   available: number;
+  /** Recorded visits. A floor, not a measurement - see visits.ts. */
+  visits: number;
 }
 
-const readRegisteredCount = async (): Promise<number> => {
-  const snap = await adminDb().collection(COL.donors).count().get();
-  return snap.data().count;
-};
-
-const loadRegisteredCount = unstable_cache(readRegisteredCount, ["donor-registered-count-v1"], {
-  revalidate: SEARCH_CACHE_SECONDS,
-  tags: ["donor-directory"],
-});
-
 /**
- * Both counts, or null when the tiles must not render: too few donors, or the read failed.
- * Null rather than zero on purpose. A hero that announces "0 donors" is worse than a hero with
- * no tiles, and a Firestore hiccup must never take the homepage down with it.
+ * Both numbers, or null when the read failed. Null rather than zero: a hero announcing "0" is
+ * worse than a hero with no tiles, and a Firestore hiccup must never take the homepage down.
+ *
+ * There is no minimum any more. One available donor is worth showing - someone who needs blood
+ * needs one person, not fifty - and the visitor count carries the "this place is used" weight
+ * that the old threshold was trying to protect.
  */
 export async function heroStats(): Promise<HeroStatsData | null> {
   try {
-    const [registered, directory] = await Promise.all([loadRegisteredCount(), loadDirectory()]);
-    if (!Number.isFinite(registered) || registered < HERO_STATS_MIN_REGISTERED) return null;
-    return { registered, available: directory.length };
+    const [directory, visits] = await Promise.all([loadDirectory(), loadVisits()]);
+    return { available: directory.length, visits };
   } catch {
     return null;
   }

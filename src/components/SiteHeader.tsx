@@ -91,7 +91,7 @@ export default function SiteHeader({ stats }: { stats?: HeroStatsData | null }) 
         {isHome && <p className="mt-3 max-w-md text-base leading-relaxed text-white/85">{t.home.heroLede}</p>}
         {isHome && stats && (
           <div className="mt-6">
-            <HeroStats registered={stats.registered} available={stats.available} />
+            <HeroStats visits={stats.visits} available={stats.available} />
           </div>
         )}
       </div>
