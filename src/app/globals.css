@@ -67,3 +67,87 @@ body {
     box-shadow: none;
   }
 }
+
+/* Hero art behind the headline: a photograph, washed in the brand red.
+   The source photo is light and its subject sits on one side, so two things matter here.
+   The image is mirrored in the file itself, putting the hands on the right, clear of the
+   headline column. And the gradient above it is near-opaque on the left and thins out to the
+   right, so the text always sits on solid colour while the photo stays visible beside it.
+   Without that wash, white text over the photo's pale background would be unreadable.
+
+   Same-origin only: the CSP blocks remote images, so the file lives in public/. */
+.rk-hero-art {
+  background-image:
+    linear-gradient(
+      100deg,
+      rgb(168 38 31 / 0.99) 0%,
+      rgb(168 38 31 / 0.97) 34%,
+      rgb(150 33 26 / 0.86) 56%,
+      rgb(126 27 22 / 0.62) 78%,
+      rgb(126 27 22 / 0.52) 100%
+    ),
+    url("/hero.jpg");
+  background-repeat: no-repeat, no-repeat;
+  background-size: auto, cover;
+  background-position: center, right center;
+}
+
+/* On a phone the band is already full: headline, lede and two tiles. There is no empty corner
+   for a photo to sit in, and a fixed-size image placed in one leaves a hard rectangular edge
+   that reads as a mistake. So the phone gets the tighter crop bled across the whole band under
+   a heavier wash - atmosphere rather than a picture to look at. Raise the band's padding if it
+   should become a feature instead. */
+@media (max-width: 639px) {
+  .rk-hero-art {
+    background-image:
+      linear-gradient(
+        158deg,
+        rgb(168 38 31 / 0.98) 0%,
+        rgb(168 38 31 / 0.93) 40%,
+        rgb(150 33 26 / 0.86) 66%,
+        rgb(126 27 22 / 0.8) 100%
+      ),
+      url("/hero-sm.jpg");
+    background-size: auto, cover;
+    background-position: center, right top;
+  }
+}
+
+/* Register page band. It is short and very wide, so `cover` shows a horizontal slice: the
+   position is set on the plasters, which are the part of the photo that reads at that height.
+   The wash is heavier on the left, where the headline sits, and lets the arms through on the
+   right. The source photo is only 540px wide, so it is soft at full width; the wash hides most
+   of that, and a larger original would replace it with no other change. */
+.rk-register-art {
+  background-image:
+    linear-gradient(
+      100deg,
+      rgb(168 38 31 / 0.99) 0%,
+      rgb(168 38 31 / 0.96) 36%,
+      rgb(150 33 26 / 0.82) 60%,
+      rgb(126 27 22 / 0.62) 100%
+    ),
+    url("/register-hero.jpg");
+  background-repeat: no-repeat, no-repeat;
+  background-size: auto, cover;
+  background-position: center, center 52%;
+}
+
+/* On a phone the band is taller relative to its width, so more of the frame fits: pull back to
+   the arms rather than a slice of them, and wash harder since the headline spans the width. */
+@media (max-width: 639px) {
+  .rk-register-art {
+    background-image:
+      linear-gradient(
+        158deg,
+        rgb(168 38 31 / 0.98) 0%,
+        rgb(168 38 31 / 0.93) 44%,
+        rgb(140 31 25 / 0.84) 100%
+      ),
+      url("/register-hero.jpg");
+    background-size: auto, cover;
+    /* The image is a wide canvas with the arms on its right, so a narrow band must anchor
+       right or it shows nothing but the extended backdrop. */
+    background-position: center, right 44%;
+  }
+}

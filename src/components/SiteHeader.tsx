@@ -28,6 +28,7 @@ export default function SiteHeader({ stats }: { stats?: HeroStatsData | null }) 
             ? t.hero.team
             : null;
   const isHome = pathname === "/";
+  const isRegister = pathname === "/register";
   const showRegister = pathname !== "/register"; // a link to the page you're already on would do nothing
   const showTeam = pathname !== "/team";
 
@@ -35,11 +36,19 @@ export default function SiteHeader({ stats }: { stats?: HeroStatsData | null }) 
     <header
       // Homepage redesign: a deeper band with a wider corner radius, so the action cards can sit
       // over its bottom edge. Every other route keeps exactly the band it had before.
-      className={`bg-gradient-to-b from-accent to-accent-dark text-white ${
+      // relative + overflow-hidden so the art layer sits under the content and is clipped by
+      // the band's rounded bottom corners.
+      className={`relative overflow-hidden bg-gradient-to-b from-accent to-accent-dark text-white ${
         isHome ? "rounded-b-[2.25rem] pb-28" : "rounded-b-[2rem]"
       } ${!isHome && headline ? "pb-14" : ""} ${!isHome && !headline ? "pb-6" : ""}`}
     >
-      <div className="mx-auto w-full max-w-2xl px-4 pt-4">
+      {(isHome || isRegister) && (
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none absolute inset-0 ${isHome ? "rk-hero-art" : "rk-register-art"}`}
+        />
+      )}
+      <div className="relative mx-auto w-full max-w-2xl px-4 pt-4">
         <div className="flex items-center justify-between gap-3">
           <Link
             href="/"
