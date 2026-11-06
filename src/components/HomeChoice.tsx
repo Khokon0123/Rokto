@@ -18,9 +18,10 @@ const card = "rounded-[18px] border border-line bg-surface p-6 shadow-card";
 export default function HomeChoice() {
   const t = useT();
   return (
-    // items-start: each card sizes to its own content. Stretching them to a shared height left
-    // a dead gap above the shorter card's button.
-    <div className="grid items-start gap-4 sm:grid-cols-2">
+    // Equal height by default (no items-start), with mt-auto pinning each button to the bottom
+    // of its own card. Letting the cards size to their content made the shorter one look
+    // clipped beside the taller; stretching without mt-auto left the button floating mid-card.
+    <div className="grid gap-4 sm:grid-cols-2">
       <div className={`${card} flex flex-col gap-4 border-t-4 border-t-accent`}>
         <div>
           <span className="inline-block rounded-full bg-accent-soft px-3 py-1 text-xs font-bold text-accent">
@@ -29,7 +30,7 @@ export default function HomeChoice() {
           <h2 className="mt-3 text-xl font-bold text-ink">{t.home.choice.searchTitle}</h2>
           <p className="mt-1 text-base leading-relaxed text-muted">{t.home.choice.searchBody}</p>
         </div>
-        <Link href="/search" className={`${btnPrimary} w-full`}>
+        <Link href="/search" className={`${btnPrimary} mt-auto w-full`}>
           {t.home.choice.searchCta}
         </Link>
       </div>
@@ -49,7 +50,7 @@ export default function HomeChoice() {
             ))}
           </ul>
         </div>
-        <Link href="/register" className={`${btnSecondary} w-full`}>
+        <Link href="/register" className={`${btnSecondary} mt-auto w-full`}>
           {t.home.choice.registerCta}
         </Link>
       </div>
