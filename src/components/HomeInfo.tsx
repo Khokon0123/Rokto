@@ -54,7 +54,7 @@ export default function HomeInfo() {
               {i === 0 ? (
                 <Link
                   href="/register"
-                  className="mt-3 block text-lg font-bold text-accent underline underline-offset-2"
+                  className="mt-3 inline-flex min-h-11 items-center text-lg font-bold text-accent underline underline-offset-2"
                 >
                   {item.title}
                 </Link>

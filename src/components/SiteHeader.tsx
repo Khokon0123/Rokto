@@ -52,7 +52,9 @@ export default function SiteHeader({ stats }: { stats?: HeroStatsData | null }) 
         <div className="flex items-center justify-between gap-3">
           <Link
             href="/"
-            className="flex items-baseline gap-2 focus-visible:outline-white"
+            // py-2 only to make the tap target 48px; the nav row is already that tall because
+            // of the register pill, so this changes the hit area and not the layout.
+            className="flex items-baseline gap-2 py-2 focus-visible:outline-white"
             aria-label={t.nav.home}
           >
             <span className="text-2xl font-extrabold tracking-tight">{APP_NAME}</span>
@@ -82,7 +84,7 @@ export default function SiteHeader({ stats }: { stats?: HeroStatsData | null }) 
               type="button"
               onClick={() => setLocale(otherLocale)}
               aria-label={t.nav.switchLanguage}
-              className="inline-flex min-h-9 shrink-0 items-center whitespace-nowrap rounded-full border border-white/40 px-3 text-xs font-bold text-white hover:bg-white/10 focus-visible:outline-white"
+              className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-full border border-white/40 px-3 text-xs font-bold text-white hover:bg-white/10 focus-visible:outline-white"
             >
               {otherLocale === "en" ? "EN" : "বাংলা"}
             </button>

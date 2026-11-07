@@ -73,10 +73,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const stats = await heroStats();
 
   return (
-    // suppressHydrationWarning: browser extensions (coupon/reward tools, translators) add attributes to <html>
-    // before React loads, which triggers a harmless dev-only mismatch warning.
+    // suppressHydrationWarning: browser extensions (coupon/reward tools, translators, password
+    // managers) add attributes to <html> and <body> before React loads, which triggers a harmless
+    // dev-only mismatch warning. It only covers the element it is on, not its children, so <body>
+    // needs its own -- extensions tag that one too (e.g. __processed_<uuid>__="true").
     <html lang={locale} className={`${inter.variable} ${anekBangla.variable} ${hindSiliguri.variable} h-full antialiased`} suppressHydrationWarning>
-      <body className="flex min-h-full flex-col">
+      <body className="flex min-h-full flex-col" suppressHydrationWarning>
         <LocaleProvider initialLocale={locale}>
           <SiteHeader stats={stats} />
           <main className="mx-auto w-full max-w-2xl flex-1 px-4 pb-12 pt-6">{children}</main>
