@@ -35,7 +35,8 @@ test("register -> edit link -> edit -> search -> recover (old link dies) -> dele
 
   // Search finds the donor; the number is revealed on a tap (S2)
   await page.goto("/search");
-  await page.getByLabel("Blood group").selectOption("O-");
+  // The blood group filter is a row of chips now, not a select: one tap, not open-scroll-confirm.
+  await page.getByRole("button", { name: "O-", exact: true }).click();
   await expect(page.getByText("Rahim Uddin")).toBeVisible();
   await page.getByRole("button", { name: "Show phone number" }).click();
   await expect(page.getByRole("link", { name: "Call 01712345678" })).toBeVisible();
@@ -45,7 +46,8 @@ test("register -> edit link -> edit -> search -> recover (old link dies) -> dele
   await page.getByRole("switch").click();
   await expect(page.getByText("Saved")).toBeVisible();
   await page.goto("/search");
-  await page.getByLabel("Blood group").selectOption("O-");
+  // The blood group filter is a row of chips now, not a select: one tap, not open-scroll-confirm.
+  await page.getByRole("button", { name: "O-", exact: true }).click();
   await expect(page.getByText("No available donors found.")).toBeVisible();
 
   // Recover: new link works, old link is dead
