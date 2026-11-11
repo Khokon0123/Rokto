@@ -77,8 +77,20 @@ export const SEARCH_CACHE_SECONDS = 300;
 export const PHONE_REVEAL_MODE: "tap" | "public" = "tap";
 /** After one CAPTCHA, further reveals from the same visitor ride on a short signed pass. */
 export const REVEAL_PASS_TTL_SECONDS = 15 * 60;
-export const REVEAL_MAX_PER_IP_PER_HOUR = 40;
-export const REVEAL_MAX_PER_IP_PER_DAY = 120;
+/** Per-IP ceilings. Deliberately not tiny: mobile carriers here put thousands of real people
+ *  behind one address, so a hard per-IP cap punishes the wrong person. The per-ACCOUNT limits
+ *  below are the real defence - an account costs an SMS to make, an IP costs nothing. */
+export const REVEAL_MAX_PER_IP_PER_HOUR = 25;
+export const REVEAL_MAX_PER_IP_PER_DAY = 60;
+/** Per-account limits. Enough for a real emergency - ring ten people in an hour - and far short of
+ *  taking the directory home. */
+export const REVEAL_MAX_PER_SEEKER_PER_HOUR = 10;
+export const REVEAL_MAX_PER_SEEKER_PER_DAY = 25;
+/** One look-up of one donor, for this long. A refresh, a second tap or a back-and-forward is the
+ *  same look-up and must not become a second row in the donor's history. */
+export const REVEAL_DEDUP_SECONDS = 15 * 60;
+/** How long a reveal record is kept. /privacy states this number; change both together. */
+export const REVEAL_RETENTION_DAYS = 365;
 
 /** PENDING OWNER DECISION #5: public location precision. Locations are snapped to this grid
  *  (same home -> same public point, every time; S5). */

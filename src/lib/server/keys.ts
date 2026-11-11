@@ -13,6 +13,8 @@ export const COL = {
   audit: "adminAudit", // S7
   seekers: "seekers", // {sha256(phone)} -> { username, phone, createdAt, suspended, ... }  one per number
   seekerUsernames: "seekerUsernames", // {username} -> { seekerId }  uniqueness guard, claimed in a transaction
+  reveals: "reveals", // {auto} -> who revealed whose number, when  (append-only, admin-read only)
+  revealDedup: "revealDedup", // {seekerId}:{donorId} -> { expireAt }  one look-up, not one per refresh
   directory: "directory", // {shard} -> { entries: { [donorId]: row } }  (S2/S4 search list)
   team: "team",
   meta: "meta",

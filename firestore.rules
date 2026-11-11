@@ -9,7 +9,10 @@ service cloud.firestore {
     //
     // Private collections, all covered by the catch-all below:
     //   donors, directory (pre-built search list), donorSecrets (edit-token hashes), phoneIndex (one profile per phone),
-    //   blockedPhones, otpChallenges, usedProofs, rateLimits, reports, adminAudit, team, meta.
+    //   blockedPhones, otpChallenges, usedProofs, rateLimits, reports, adminAudit, team, meta,
+    //   seekers + seekerUsernames (accounts for people looking for blood),
+    //   reveals + revealDedup (who took whose number: append-only, written by the server, read
+    //   only by the admin panel - a browser must never be able to read or alter this history).
     match /{document=**} {
       allow read, write: if false;
     }

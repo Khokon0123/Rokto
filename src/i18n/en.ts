@@ -422,6 +422,7 @@ export const en = {
     team_facebook_invalid: "Paste a full Facebook link, like https://www.facebook.com/yourname",
     generic: "Something went wrong. Please try again.",
     seeker_required: "Please sign in first.",
+    seeker_suspended: "This account can no longer view donor numbers. Contact us if you think this is a mistake.",
     admin_password_wrong: "That password is incorrect.",
     admin_unauthorized: "Your admin session expired. Please log in again.",
     network: "Network problem. Check your connection and try again.",

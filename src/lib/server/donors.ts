@@ -210,12 +210,20 @@ export async function deleteDonorById(id: string, block: { reason: string } | nu
 }
 
 /** One phone number, on purpose, for one donor who is currently available (S2 reveal). */
-export async function revealPhone(id: string): Promise<string> {
+export interface RevealedDonor {
+  phone: string;
+  /** Snapshotted into the audit row, so the history still reads correctly after an edit or a delete. */
+  name: string;
+  area: string;
+  bloodGroup: string;
+}
+
+export async function revealPhone(id: string): Promise<RevealedDonor> {
   if (!/^[A-Za-z0-9]{1,40}$/.test(id)) throw new ApiError(404, "not_found");
   const snap = await donorRef(id).get();
   const d = snap.data();
   if (!d || d.available !== true || typeof d.phone !== "string") throw new ApiError(404, "not_found");
-  return d.phone;
+  return { phone: d.phone, name: String(d.name ?? ""), area: String(d.area ?? ""), bloodGroup: String(d.bloodGroup ?? "") };
 }
 
 export function toEditable(data: DocumentData): EditableProfile {

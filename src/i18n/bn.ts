@@ -424,6 +424,7 @@ export const bn: Messages = {
     team_facebook_invalid: "পুরো ফেসবুক লিংক দিন, যেমন https://www.facebook.com/yourname",
     generic: "কিছু একটা সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।",
     seeker_required: "আগে সাইন ইন করুন।",
+    seeker_suspended: "এই অ্যাকাউন্ট আর রক্তদাতার নম্বর দেখতে পারবে না। ভুল মনে হলে আমাদের জানান।",
     admin_password_wrong: "পাসওয়ার্ডটি সঠিক নয়।",
     admin_unauthorized: "আপনার অ্যাডমিন সেশনের মেয়াদ শেষ হয়ে গেছে। অনুগ্রহ করে আবার লগইন করুন।",
     network: "নেটওয়ার্ক সমস্যা। আপনার সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।",
