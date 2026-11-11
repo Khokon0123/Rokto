@@ -92,6 +92,13 @@ export default function SiteFooter() {
         aria-label={t.nav.privacy}
         className="mx-auto flex w-full max-w-2xl flex-wrap items-center justify-center gap-x-4 px-4 pb-5 text-center text-sm text-white/85"
       >
+        {/* Phase 1's only way in: nothing on the site requires an account yet, so this is here to
+            let people create one (and to show how many choose to) before anything is gated. */}
+        {pathname !== "/signin" && pathname !== "/account" && (
+          <Link href="/signin" className="inline-flex min-h-11 items-center underline focus-visible:outline-white">
+            {t.account.signIn}
+          </Link>
+        )}
         <Link href="/privacy" className="inline-flex min-h-11 items-center underline focus-visible:outline-white">
           {t.nav.privacy}
         </Link>

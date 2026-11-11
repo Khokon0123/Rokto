@@ -11,6 +11,7 @@ import {
   OTP_MAX_PER_SUBNET_PER_DAY,
   OTP_PROOF_TTL_SECONDS,
   OTP_RECOVER_SHARE,
+  OTP_SIGNIN_SHARE,
   OTP_RESEND_COOLDOWN_SECONDS,
   OTP_TTL_SECONDS,
   PROOF_MAX_USES,
@@ -31,7 +32,7 @@ import { sendOtpSms } from "./sms";
 // expiry and wrong-guess counter. The code itself is never stored. A correct code yields a signed,
 // purpose-bound, short-lived "proof" that one endpoint (register / recover / change_phone) accepts.
 
-export const OTP_PURPOSES = ["register", "recover", "change_phone"] as const;
+export const OTP_PURPOSES = ["register", "recover", "change_phone", "signin"] as const;
 export type OtpPurpose = (typeof OTP_PURPOSES)[number];
 
 export function secret(): string {
@@ -66,13 +67,15 @@ export function dailyCap(): number {
   return Number.isFinite(n) && n >= 0 ? Math.floor(n) : OTP_DEFAULT_DAILY_CAP;
 }
 
-/** Separate budgets so recovery spam can't starve registration, or the other way round (S3). */
+/** Separate budgets so no one purpose can starve the others (S3). Registration keeps whatever is
+ *  left after recovery and sign-in, because a donor who cannot register is the worst failure. */
 export function budgetFor(purpose: OtpPurpose, cap: number): { key: string; limit: number } {
   const recover = Math.ceil(cap * OTP_RECOVER_SHARE);
+  const signin = Math.ceil(cap * OTP_SIGNIN_SHARE);
   const day = dhakaDate();
-  return purpose === "recover"
-    ? { key: `otp:day:${day}:recover`, limit: recover }
-    : { key: `otp:day:${day}:main`, limit: Math.max(0, cap - recover) };
+  if (purpose === "recover") return { key: `otp:day:${day}:recover`, limit: recover };
+  if (purpose === "signin") return { key: `otp:day:${day}:signin`, limit: signin };
+  return { key: `otp:day:${day}:main`, limit: Math.max(0, cap - recover - signin) };
 }
 
 async function chargeDailyBudget(purpose: OtpPurpose): Promise<string> {
@@ -227,7 +230,7 @@ export async function finishOtp(input: {
   return { proof: signProof({ phone, purpose, jti: b64(randomBytes(16)), exp: Date.now() + OTP_PROOF_TTL_SECONDS * 1000 }) };
 }
 
-interface ProofData {
+export interface ProofData {
   phone: string;
   purpose: OtpPurpose;
   jti: string;

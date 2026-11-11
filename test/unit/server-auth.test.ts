@@ -6,6 +6,8 @@ import { signProof, verifyPhoneProof } from "@/lib/server/otp";
 import { clientIp, subnetOf } from "@/lib/server/rateLimit";
 import { checkRevealPass, issueRevealPass } from "@/lib/server/revealPass";
 import { budgetFor, dailyCap } from "@/lib/server/otp";
+import { readSeekerSession, signSeekerSession } from "@/lib/server/seekerAuth";
+import { generateUsername, isUsername } from "@/lib/server/username";
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -97,7 +99,7 @@ describe("S8: client IP", () => {
 });
 
 describe("D6/S3: SMS budget", () => {
-  it("OTP_DAILY_CAP=0 really means zero; recover has its own share", () => {
+  it("OTP_DAILY_CAP=0 really means zero; recover and sign-in have their own shares", () => {
     vi.stubEnv("OTP_DAILY_CAP", "0");
     expect(dailyCap()).toBe(0);
     vi.stubEnv("OTP_DAILY_CAP", "");
@@ -105,8 +107,12 @@ describe("D6/S3: SMS budget", () => {
     vi.stubEnv("OTP_DAILY_CAP", "abc");
     expect(dailyCap()).toBe(300);
     expect(budgetFor("recover", 100).limit).toBe(30);
-    expect(budgetFor("register", 100).limit).toBe(70);
-    expect(budgetFor("register", 100).key).not.toBe(budgetFor("recover", 100).key);
+    expect(budgetFor("signin", 100).limit).toBe(25);
+    // Registration keeps the remainder: a donor who cannot register is the worst failure, so it is
+    // the one budget that is never carved into a fixed slice.
+    expect(budgetFor("register", 100).limit).toBe(45);
+    const keys = ["register", "recover", "signin"].map((p) => budgetFor(p as "register", 100).key);
+    expect(new Set(keys).size).toBe(3);
   });
 });
 
@@ -127,7 +133,7 @@ describe("H2: production configuration", () => {
       vi.stubEnv(k, "");
     }
     const problems = configIssues().map((i) => i.subsystem);
-    expect(new Set(problems)).toEqual(new Set(["firebase", "otp", "admin", "captcha", "site", "sms"]));
+    expect(new Set(problems)).toEqual(new Set(["firebase", "otp", "admin", "seeker", "captcha", "site", "sms"]));
     expect(() => assertProductionConfig()).toThrow(/incomplete/);
   });
   it("a complete config passes", () => {
@@ -139,6 +145,7 @@ describe("H2: production configuration", () => {
       OTP_SECRET: "o".repeat(40),
       ADMIN_PASSWORD: "a".repeat(20),
       ADMIN_SESSION_SECRET: "s".repeat(40),
+      SEEKER_SESSION_SECRET: "k".repeat(40),
       TURNSTILE_SECRET_KEY: "t",
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: "t",
       NEXT_PUBLIC_SITE_URL: "https://www.roktoctg.com",
@@ -147,5 +154,43 @@ describe("H2: production configuration", () => {
     };
     for (const [k, v] of Object.entries(env)) vi.stubEnv(k, v);
     expect(configIssues()).toEqual([]);
+  });
+});
+
+describe("seeker sessions", () => {
+  it("round-trips, and rejects tampering, expiry and a version bump", () => {
+    vi.stubEnv("SEEKER_SESSION_SECRET", "seeker-secret-long-enough-for-the-check");
+    const token = signSeekerSession({ seekerId: "abc123", username: "shanto-alo-472" });
+    expect(readSeekerSession(token)).toEqual({ seekerId: "abc123", username: "shanto-alo-472" });
+
+    expect(readSeekerSession(undefined)).toBeNull();
+    expect(readSeekerSession("junk")).toBeNull();
+    expect(readSeekerSession(`${token}x`)).toBeNull();
+    expect(readSeekerSession(signSeekerSession({ seekerId: "a", username: "b" }, Date.now() - 86_400_000 * 40))).toBeNull();
+
+    // Bumping the version signs everyone out at once.
+    vi.stubEnv("SEEKER_SESSION_VERSION", "2");
+    expect(readSeekerSession(token)).toBeNull();
+  });
+
+  it("a seeker token is not an admin token, and the other way round", () => {
+    vi.stubEnv("SEEKER_SESSION_SECRET", "seeker-secret-long-enough-for-the-check");
+    vi.stubEnv("ADMIN_PASSWORD", "admin-password-long-enough");
+    expect(readSeekerSession(signAdminSession())).toBeNull();
+    expect(isValidAdminSession(signSeekerSession({ seekerId: "a", username: "b" }))).toBe(false);
+  });
+});
+
+describe("usernames", () => {
+  it("generates the documented shape, and the shape check agrees", () => {
+    for (let i = 0; i < 200; i++) expect(isUsername(generateUsername())).toBe(true);
+    for (const bad of ["", "one-two", "ONE-TWO-123", "one-two-12", "one-two-012", "one two 123", 7, null]) {
+      expect(isUsername(bad)).toBe(false);
+    }
+  });
+
+  it("does not hand out the same name twice in a row very often", () => {
+    const seen = new Set(Array.from({ length: 500 }, () => generateUsername()));
+    expect(seen.size).toBeGreaterThan(480);
   });
 });

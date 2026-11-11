@@ -4,6 +4,7 @@ import "./globals.css";
 import { LocaleProvider } from "@/components/LocaleProvider";
 import SiteFooter from "@/components/SiteFooter";
 import { heroStats } from "@/lib/server/stats";
+import { seekerFromCookies } from "@/lib/server/seekerSession";
 import SiteHeader from "@/components/SiteHeader";
 import { APP_NAME } from "@/config/app";
 import { SITE_URL } from "@/config/site";
@@ -71,6 +72,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // "donor-directory" tag, so this is ~one Firestore aggregate per cache period for the whole
   // site, and every route is already server-rendered on demand.
   const stats = await heroStats();
+  // Rendered server-side from the cookie so the header never needs a round trip to know who you are.
+  const seeker = await seekerFromCookies();
 
   return (
     // suppressHydrationWarning: browser extensions (coupon/reward tools, translators, password
@@ -80,7 +83,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang={locale} className={`${inter.variable} ${anekBangla.variable} ${hindSiliguri.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="flex min-h-full flex-col" suppressHydrationWarning>
         <LocaleProvider initialLocale={locale}>
-          <SiteHeader stats={stats} />
+          <SiteHeader stats={stats} seeker={seeker} />
           <main className="mx-auto w-full max-w-2xl flex-1 px-4 pb-12 pt-6">{children}</main>
           <SiteFooter />
         </LocaleProvider>

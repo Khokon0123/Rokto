@@ -7,7 +7,7 @@ import { onlyDigits } from "@/lib/digits";
 import { solveCaptcha } from "@/lib/turnstile";
 
 export type OtpStatus = "idle" | "sending" | "sent" | "verifying";
-export type OtpPurpose = "register" | "recover" | "change_phone";
+export type OtpPurpose = "register" | "recover" | "change_phone" | "signin";
 
 /**
  * One-time phone verification by SMS (our own /api/otp routes). This is NOT a login: a correct
