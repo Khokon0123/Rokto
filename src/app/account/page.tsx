@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
-import { seekerFromCookies } from "@/lib/server/seekerSession";
+import { accountFromCookies } from "@/lib/server/accountSession";
 import AccountClient from "./AccountClient";
 
 export default async function AccountPage() {
-  const seeker = await seekerFromCookies();
-  if (!seeker) redirect("/signin");
-  return <AccountClient username={seeker.username} />;
+  const account = await accountFromCookies();
+  if (!account) redirect("/signin");
+  return <AccountClient username={account.username} />;
 }

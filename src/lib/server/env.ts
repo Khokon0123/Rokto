@@ -5,7 +5,7 @@ import "server-only";
 
 export const isProduction = () => process.env.NODE_ENV === "production";
 
-export type Subsystem = "firebase" | "otp" | "sms" | "captcha" | "admin" | "seeker" | "site";
+export type Subsystem = "firebase" | "otp" | "sms" | "captcha" | "admin" | "account" | "site";
 
 export interface ConfigIssue {
   subsystem: Subsystem;
@@ -43,12 +43,15 @@ export function configIssues(): ConfigIssue[] {
   if (env("ADMIN_SESSION_SECRET") && env("ADMIN_SESSION_SECRET") === env("OTP_SECRET")) {
     issues.push({ subsystem: "admin", problem: "ADMIN_SESSION_SECRET must differ from OTP_SECRET" });
   }
-  if (env("SEEKER_SESSION_SECRET").length < 32) {
-    issues.push({ subsystem: "seeker", problem: "SEEKER_SESSION_SECRET must be at least 32 characters" });
+  // Either name works: ACCOUNT_SESSION_SECRET is current, SEEKER_SESSION_SECRET is what the first
+  // deploy used. Keeping both means renaming it in the dashboard can never take the site down.
+  const sessionSecret = env("ACCOUNT_SESSION_SECRET") || env("SEEKER_SESSION_SECRET");
+  if (sessionSecret.length < 32) {
+    issues.push({ subsystem: "account", problem: "ACCOUNT_SESSION_SECRET must be at least 32 characters" });
   }
   for (const other of ["OTP_SECRET", "ADMIN_SESSION_SECRET"]) {
-    if (env("SEEKER_SESSION_SECRET") && env("SEEKER_SESSION_SECRET") === env(other)) {
-      issues.push({ subsystem: "seeker", problem: `SEEKER_SESSION_SECRET must differ from ${other}` });
+    if (sessionSecret && sessionSecret === env(other)) {
+      issues.push({ subsystem: "account", problem: `ACCOUNT_SESSION_SECRET must differ from ${other}` });
     }
   }
   if (!has("TURNSTILE_SECRET_KEY")) issues.push({ subsystem: "captcha", problem: "TURNSTILE_SECRET_KEY is missing" });

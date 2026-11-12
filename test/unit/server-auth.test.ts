@@ -6,7 +6,7 @@ import { signProof, verifyPhoneProof } from "@/lib/server/otp";
 import { clientIp, subnetOf } from "@/lib/server/rateLimit";
 import { checkRevealPass, issueRevealPass } from "@/lib/server/revealPass";
 import { budgetFor, dailyCap } from "@/lib/server/otp";
-import { readSeekerSession, signSeekerSession } from "@/lib/server/seekerAuth";
+import { readAccountSession, signAccountSession } from "@/lib/server/accountAuth";
 import { generateUsername, isUsername } from "@/lib/server/username";
 
 afterEach(() => {
@@ -133,7 +133,7 @@ describe("H2: production configuration", () => {
       vi.stubEnv(k, "");
     }
     const problems = configIssues().map((i) => i.subsystem);
-    expect(new Set(problems)).toEqual(new Set(["firebase", "otp", "admin", "seeker", "captcha", "site", "sms"]));
+    expect(new Set(problems)).toEqual(new Set(["firebase", "otp", "admin", "account", "captcha", "site", "sms"]));
     expect(() => assertProductionConfig()).toThrow(/incomplete/);
   });
   it("a complete config passes", () => {
@@ -157,27 +157,27 @@ describe("H2: production configuration", () => {
   });
 });
 
-describe("seeker sessions", () => {
+describe("account sessions", () => {
   it("round-trips, and rejects tampering, expiry and a version bump", () => {
-    vi.stubEnv("SEEKER_SESSION_SECRET", "seeker-secret-long-enough-for-the-check");
-    const token = signSeekerSession({ seekerId: "abc123", username: "shanto-alo-472" });
-    expect(readSeekerSession(token)).toEqual({ seekerId: "abc123", username: "shanto-alo-472" });
+    vi.stubEnv("SEEKER_SESSION_SECRET", "account-secret-long-enough-for-the-check");
+    const token = signAccountSession({ accountId: "abc123", username: "shanto-alo-472" });
+    expect(readAccountSession(token)).toEqual({ accountId: "abc123", username: "shanto-alo-472" });
 
-    expect(readSeekerSession(undefined)).toBeNull();
-    expect(readSeekerSession("junk")).toBeNull();
-    expect(readSeekerSession(`${token}x`)).toBeNull();
-    expect(readSeekerSession(signSeekerSession({ seekerId: "a", username: "b" }, Date.now() - 86_400_000 * 40))).toBeNull();
+    expect(readAccountSession(undefined)).toBeNull();
+    expect(readAccountSession("junk")).toBeNull();
+    expect(readAccountSession(`${token}x`)).toBeNull();
+    expect(readAccountSession(signAccountSession({ accountId: "a", username: "b" }, Date.now() - 86_400_000 * 40))).toBeNull();
 
     // Bumping the version signs everyone out at once.
     vi.stubEnv("SEEKER_SESSION_VERSION", "2");
-    expect(readSeekerSession(token)).toBeNull();
+    expect(readAccountSession(token)).toBeNull();
   });
 
-  it("a seeker token is not an admin token, and the other way round", () => {
-    vi.stubEnv("SEEKER_SESSION_SECRET", "seeker-secret-long-enough-for-the-check");
+  it("a account token is not an admin token, and the other way round", () => {
+    vi.stubEnv("SEEKER_SESSION_SECRET", "account-secret-long-enough-for-the-check");
     vi.stubEnv("ADMIN_PASSWORD", "admin-password-long-enough");
-    expect(readSeekerSession(signAdminSession())).toBeNull();
-    expect(isValidAdminSession(signSeekerSession({ seekerId: "a", username: "b" }))).toBe(false);
+    expect(readAccountSession(signAdminSession())).toBeNull();
+    expect(isValidAdminSession(signAccountSession({ accountId: "a", username: "b" }))).toBe(false);
   });
 });
 

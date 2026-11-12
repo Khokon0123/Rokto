@@ -11,10 +11,11 @@ export const COL = {
   usedProofs: "usedProofs", // {jti} -> { purpose, subject, uses, expireAt }  (S11)
   reports: "reports", // L2
   audit: "adminAudit", // S7
-  seekers: "seekers", // {sha256(phone)} -> { username, phone, createdAt, suspended, ... }  one per number
-  seekerUsernames: "seekerUsernames", // {username} -> { seekerId }  uniqueness guard, claimed in a transaction
+  accounts: "accounts", // {auto} -> { username, phone, createdAt, suspended, ... }
+  accountPhones: "accountPhones", // {sha256(phone)} -> { accountId }  one account per number, and repointable
+  usernames: "usernames", // {username} -> { accountId }  uniqueness guard, claimed in a transaction
   reveals: "reveals", // {auto} -> who revealed whose number, when  (append-only, admin-read only)
-  revealDedup: "revealDedup", // {seekerId}:{donorId} -> { expireAt }  one look-up, not one per refresh
+  revealDedup: "revealDedup", // {accountId}:{donorId} -> { expireAt }  one look-up, not one per refresh
   directory: "directory", // {shard} -> { entries: { [donorId]: row } }  (S2/S4 search list)
   team: "team",
   meta: "meta",

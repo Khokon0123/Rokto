@@ -1,7 +1,7 @@
 import "server-only";
 import { randomInt } from "node:crypto";
 
-// A seeker's public-ish label: what the admin panel and (later) a donor see instead of a phone
+// A account's public-ish label: what the admin panel and (later) a donor see instead of a phone
 // number. Two plain Bangla words in Latin script plus three digits - short enough to read out over
 // the phone, long enough that nobody lands on someone else's by accident.
 //

@@ -84,8 +84,8 @@ export const REVEAL_MAX_PER_IP_PER_HOUR = 25;
 export const REVEAL_MAX_PER_IP_PER_DAY = 60;
 /** Per-account limits. Enough for a real emergency - ring ten people in an hour - and far short of
  *  taking the directory home. */
-export const REVEAL_MAX_PER_SEEKER_PER_HOUR = 10;
-export const REVEAL_MAX_PER_SEEKER_PER_DAY = 25;
+export const REVEAL_MAX_PER_ACCOUNT_PER_HOUR = 10;
+export const REVEAL_MAX_PER_ACCOUNT_PER_DAY = 25;
 /** One look-up of one donor, for this long. A refresh, a second tap or a back-and-forward is the
  *  same look-up and must not become a second row in the donor's history. */
 export const REVEAL_DEDUP_SECONDS = 15 * 60;
@@ -115,7 +115,7 @@ export const OTP_MAX_PER_SUBNET_PER_DAY = 60; // S3: one /24 (IPv4) or /48 (IPv6
 export const OTP_DEFAULT_DAILY_CAP = 300; // overall texts/day; override with OTP_DAILY_CAP (0 = stop all)
 /** Share of the daily cap kept for /recover so registration spam can't starve it (and vice versa). */
 export const OTP_RECOVER_SHARE = 0.3;
-/** Share kept for seeker sign-in. Without its own slice, a rush of people looking for blood -
+/** Share kept for account sign-in. Without its own slice, a rush of people looking for blood -
  *  or one person cycling numbers - would eat the budget and leave a real donor unable to register. */
 export const OTP_SIGNIN_SHARE = 0.25;
 /** Wrong codes allowed per phone per day, across resends (S13). */
@@ -123,12 +123,12 @@ export const OTP_MAX_FAILED_PER_PHONE_PER_DAY = 15;
 /** A recover proof may be retried this many times (idempotent retry, S11), never more. */
 export const PROOF_MAX_USES = 3;
 
-/** Seeker accounts: people looking for blood. A seeker is NOT a donor and NOT an admin - the
+/** Account accounts: people looking for blood. A account is NOT a donor and NOT an admin - the
  *  account exists so that every phone number taken out of the directory has a name behind it.
  *  Long-lived on purpose: an emergency is the worst moment to be asked to verify a phone again. */
-export const SEEKER_SESSION_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
+export const ACCOUNT_SESSION_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
 /** Tries before giving up on finding a free username (collisions are vanishingly rare). */
-export const SEEKER_USERNAME_TRIES = 8;
+export const ACCOUNT_USERNAME_TRIES = 8;
 
 /** How long an admin login session lasts before needing the password again (S7). */
 export const ADMIN_SESSION_TTL_SECONDS = 60 * 60 * 12; // 12 hours

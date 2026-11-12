@@ -37,7 +37,7 @@ export default function SignInClient() {
   }
 
   async function onVerified(proof: string) {
-    const res = await apiCall<{ username: string; created: boolean }>("/api/seeker/signup", "POST", { proof });
+    const res = await apiCall<{ username: string; created: boolean }>("/api/account/signin", "POST", { proof });
     if (!res.ok || !res.data) {
       setError(res.error ?? "generic");
       setStep("phone");

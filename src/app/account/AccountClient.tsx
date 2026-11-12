@@ -13,7 +13,7 @@ export default function AccountClient({ username }: { username: string }) {
 
   async function signOut() {
     setBusy(true);
-    await apiCall("/api/seeker/logout", "POST", {});
+    await apiCall("/api/account/logout", "POST", {});
     // refresh() as well as replace(): the header is a server render of the cookie, so the cached
     // RSC payload has to be thrown away or the signed-in chip survives the sign-out.
     router.replace("/");

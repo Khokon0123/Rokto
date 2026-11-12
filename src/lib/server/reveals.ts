@@ -14,7 +14,7 @@ import { COL } from "./keys";
 // them. That history is the donor's protection.
 
 export interface RevealInput {
-  seekerId: string;
+  accountId: string;
   username: string;
   donorId: string;
   donor: RevealedDonor;
@@ -26,7 +26,7 @@ export interface RevealInput {
 /** True when a row was written; false when this was the same look-up inside the dedup window. */
 export async function recordReveal(input: RevealInput): Promise<boolean> {
   const db = adminDb();
-  const dedupRef = db.collection(COL.revealDedup).doc(`${input.seekerId}:${input.donorId}`);
+  const dedupRef = db.collection(COL.revealDedup).doc(`${input.accountId}:${input.donorId}`);
   const now = Date.now();
 
   return db.runTransaction(async (tx) => {
@@ -38,7 +38,7 @@ export async function recordReveal(input: RevealInput): Promise<boolean> {
 
     tx.set(dedupRef, { expireAt: Timestamp.fromMillis(now + REVEAL_DEDUP_SECONDS * 1000) });
     tx.set(db.collection(COL.reveals).doc(), {
-      seekerId: input.seekerId,
+      accountId: input.accountId,
       username: input.username,
       donorId: input.donorId,
       donorNameAtReveal: input.donor.name,
@@ -53,7 +53,7 @@ export async function recordReveal(input: RevealInput): Promise<boolean> {
     // merge, not update: an account deleted between the session check and here must not turn a
     // successful reveal into a 500.
     tx.set(
-      db.collection(COL.seekers).doc(input.seekerId),
+      db.collection(COL.accounts).doc(input.accountId),
       { revealCount: FieldValue.increment(1), lastActiveAt: FieldValue.serverTimestamp() },
       { merge: true },
     );

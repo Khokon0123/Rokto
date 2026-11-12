@@ -12,7 +12,7 @@ import type { HeroStatsData } from "@/lib/server/stats";
  * page headline and is taller, so the white content card can overlap its rounded bottom edge.
  * Other pages (edit, recover) get the same band in a compact form.
  */
-export default function SiteHeader({ stats, seeker }: { stats?: HeroStatsData | null; seeker?: { username: string } | null }) {
+export default function SiteHeader({ stats, account }: { stats?: HeroStatsData | null; account?: { username: string } | null }) {
   const t = useT();
   const { locale, setLocale } = useLocale();
   const otherLocale = locale === "bn" ? "en" : "bn";
@@ -71,13 +71,13 @@ export default function SiteHeader({ stats, seeker }: { stats?: HeroStatsData | 
                 // Signed in, the account chip takes this slot on a narrow phone: four items do not
                 // fit at 320px, and Team is in the footer on every page.
                 className={`${
-                  seeker ? "hidden sm:inline-flex" : "inline-flex"
+                  account ? "hidden sm:inline-flex" : "inline-flex"
                 } min-h-12 shrink-0 items-center whitespace-nowrap text-sm font-semibold text-white/85 hover:text-white hover:underline focus-visible:outline-white`}
               >
                 {t.nav.team}
               </Link>
             )}
-            {seeker && (
+            {account && (
               <Link
                 href="/account"
                 aria-label={t.nav.account}
@@ -87,7 +87,7 @@ export default function SiteHeader({ stats, seeker }: { stats?: HeroStatsData | 
                   <circle cx="12" cy="8" r="4" />
                   <path d="M4 21c0-4 3.6-6 8-6s8 2 8 6" strokeLinecap="round" />
                 </svg>
-                <span className="hidden max-w-[7rem] truncate sm:inline">{seeker.username}</span>
+                <span className="hidden max-w-[7rem] truncate sm:inline">{account.username}</span>
               </Link>
             )}
             {showRegister && (
