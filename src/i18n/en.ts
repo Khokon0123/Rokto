@@ -27,13 +27,13 @@ export const en = {
   home: {
     choice: {
       searchTitle: "Looking for a donor",
-      searchBody: "Search by blood group and area, then get in touch directly.",
+      searchBody: "Sign in with your number, then search by blood group and area and get in touch directly.",
       searchCta: "Search for a donor",
       registerTitle: "Register as a donor",
       registerBody: "Takes about a minute, and could help save a life.",
       registerCta: "Register",
     },
-    heroLede: "Pick a blood group and an area, then contact the donor directly. No sign-up needed.",
+    heroLede: "Pick a blood group and an area, then contact the donor directly. Sign in once with your number.",
     stats: {
       visitors: "visitors",
       available: "ready now",
@@ -190,6 +190,7 @@ export const en = {
   },
   signin: {
     lede: "Sign in with your mobile number so donors know who contacted them. It takes one text message.",
+    whySearch: "Donors asked to know who is calling them. Sign in once and the search is yours for a month.",
     phone: "Your mobile number",
     phoneHelp: "We text you a code. Your number is never shown to donors.",
     consent: "Rokto records your username with every donor number you view. The Rokto team can see this.",

@@ -31,3 +31,17 @@ export async function verify(page: Page, phoneE164: string) {
   await page.getByLabel("6-digit code").fill(code);
   await page.getByRole("button", { name: "Verify" }).click();
 }
+
+/**
+ * Creates (or re-enters) an account and lands on /search. A DIFFERENT number from the donor's on
+ * purpose: the person looking for blood is usually not the person listed, and one number cannot
+ * be sent two codes inside the resend cooldown anyway.
+ */
+export async function signIn(page: Page, phoneE164: string, local: string) {
+  await page.goto("/signin");
+  await page.getByLabel("Your mobile number").fill(local);
+  await page.getByRole("button", { name: "Send code" }).click();
+  await verify(page, phoneE164);
+  await page.getByRole("link", { name: "Find donors" }).click();
+  await page.waitForURL(/\/search/);
+}

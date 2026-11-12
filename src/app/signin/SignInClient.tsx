@@ -77,6 +77,10 @@ export default function SignInClient() {
     <div className="relative -mt-14">
       <form onSubmit={onSubmit} noValidate className={`${cardClass} space-y-6`}>
         <p className="text-base leading-relaxed text-muted">{t.signin.lede}</p>
+        {/* Sent here by the gate rather than arriving on purpose: say why, once, in their words. */}
+        {next.startsWith("/search") && (
+          <p className="rounded-2xl border border-line bg-page p-4 text-sm leading-relaxed text-muted">{t.signin.whySearch}</p>
+        )}
         <div>
           <label htmlFor="signin-phone" className={labelClass}>
             {t.signin.phone}

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { resetOutbox, verify, wipeEmulator } from "./helpers";
+import { resetOutbox, signIn, verify, wipeEmulator } from "./helpers";
 
 test.beforeEach(async ({ context }) => {
   await wipeEmulator();
@@ -33,8 +33,12 @@ test("register -> edit link -> edit -> search -> recover (old link dies) -> dele
   const toggle = page.getByRole("switch");
   await expect(toggle).toHaveAttribute("aria-checked", "true");
 
-  // Search finds the donor; the number is revealed on a tap (S2)
+  // Searching needs an account now: signed out, /search redirects to /signin and comes back.
   await page.goto("/search");
+  await expect(page).toHaveURL(/\/signin\?next=/);
+  await signIn(page, "+8801812345678", "01812345678");
+
+  // Search finds the donor; the number is revealed on a tap (S2)
   // The blood group filter is a row of chips now, not a select: one tap, not open-scroll-confirm.
   await page.getByRole("button", { name: "O-", exact: true }).click();
   await expect(page.getByText("Rahim Uddin")).toBeVisible();
