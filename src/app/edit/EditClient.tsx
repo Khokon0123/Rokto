@@ -21,22 +21,51 @@ type Load = "loading" | "invalid" | "failed" | "ready" | "deleted";
 type Save = "idle" | "saving" | "saved";
 type Patch = Partial<Pick<EditableProfile, "available" | "lastDonated" | "area" | "location" | "name" | "bloodGroup">>;
 
+type Result<T> = Awaited<ReturnType<typeof apiCall<T>>>;
+
+/**
+ * The two doors into a profile: a private edit link, and a signed-in account. Same editor, same
+ * screen, same server-side validation - only the credential differs, so neither door can quietly
+ * fall behind the other.
+ */
+export interface ProfileTransport {
+  load: () => Promise<Result<{ profile: EditableProfile }>>;
+  patch: (body: Record<string, unknown>) => Promise<Result<{ profile: EditableProfile }>>;
+  remove: () => Promise<Result<unknown>>;
+  /** Changing the number moves the account too, so it belongs to the link door for now. */
+  allowPhoneChange: boolean;
+}
+
+export const tokenTransport = (token: string): ProfileTransport => ({
+  load: () => apiCall<{ profile: EditableProfile }>("/api/edit", "POST", { token }),
+  patch: (body) => apiCall<{ profile: EditableProfile }>("/api/edit", "PATCH", { token, ...body }),
+  remove: () => apiCall("/api/edit", "DELETE", { token }),
+  allowPhoneChange: true,
+});
+
+export const accountTransport = (): ProfileTransport => ({
+  load: () => apiCall<{ profile: EditableProfile }>("/api/account/listing", "GET"),
+  patch: (body) => apiCall<{ profile: EditableProfile }>("/api/account/listing", "PATCH", body),
+  remove: () => apiCall("/api/account/listing", "DELETE", {}),
+  allowPhoneChange: false,
+});
+
 /** F7: saves run one at a time, and only the newest response is allowed to update the screen. */
-function useSaveQueue(token: string) {
+function useSaveQueue(transport: ProfileTransport) {
   const chain = useRef<Promise<unknown>>(Promise.resolve());
   const seq = useRef(0);
   return useCallback(
     (body: Record<string, unknown>) => {
       const mine = ++seq.current;
-      const run = chain.current.then(() => apiCall<{ profile: EditableProfile }>("/api/edit", "PATCH", { token, ...body }));
+      const run = chain.current.then(() => transport.patch(body));
       chain.current = run.catch(() => undefined);
       return run.then((res) => ({ res, latest: mine === seq.current }));
     },
-    [token],
+    [transport],
   );
 }
 
-export default function EditClient({ token }: { token: string }) {
+export default function EditClient({ transport }: { transport: ProfileTransport }) {
   const t = useT();
   const errorMessage = useErrorMessage();
   const [load, setLoad] = useState<Load>("loading");
@@ -54,7 +83,7 @@ export default function EditClient({ token }: { token: string }) {
   const [phoneNotice, setPhoneNotice] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const enqueue = useSaveQueue(token);
+  const enqueue = useSaveQueue(transport);
 
   const applyProfile = useCallback((p: EditableProfile) => {
     setProfile(p);
@@ -64,7 +93,7 @@ export default function EditClient({ token }: { token: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    void apiCall<{ profile: EditableProfile }>("/api/edit", "POST", { token }).then((res) => {
+    void transport.load().then((res) => {
       if (cancelled) return;
       if (res.ok && res.data) {
         applyProfile(res.data.profile);
@@ -78,7 +107,7 @@ export default function EditClient({ token }: { token: string }) {
     return () => {
       cancelled = true;
     };
-  }, [token, attempt, applyProfile]);
+  }, [transport, attempt, applyProfile]);
 
   /** Optimistic: the screen updates at once; on failure only the fields in this patch roll back. */
   const saveChange = useCallback(
@@ -97,10 +126,10 @@ export default function EditClient({ token }: { token: string }) {
       setError(res.error ?? "generic");
       setSave("idle");
       // Re-read the truth from the server instead of guessing an older value (F7).
-      const fresh = await apiCall<{ profile: EditableProfile }>("/api/edit", "POST", { token });
+      const fresh = await transport.load();
       if (fresh.ok && fresh.data) applyProfile(fresh.data.profile);
     },
-    [enqueue, applyProfile, token],
+    [enqueue, applyProfile, transport],
   );
 
   function saveDate(e: FormEvent) {
@@ -154,7 +183,7 @@ export default function EditClient({ token }: { token: string }) {
 
   async function deleteProfile() {
     setDeleting(true);
-    const res = await apiCall("/api/edit", "DELETE", { token });
+    const res = await transport.remove();
     if (res.ok) setLoad("deleted");
     else {
       setDeleting(false);
@@ -332,8 +361,9 @@ export default function EditClient({ token }: { token: string }) {
       )}
 
       <div>
-        <p className={labelClass}>{t.edit.phone}</p>
-        {phoneMode === "closed" && (
+        {/* The whole phone block belongs to the link door; without it there is nothing to label. */}
+        {transport.allowPhoneChange && <p className={labelClass}>{t.edit.phone}</p>}
+        {transport.allowPhoneChange && phoneMode === "closed" && (
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-lg font-semibold">{formatLocalPhone(profile.phone)}</p>
             <button
@@ -350,7 +380,7 @@ export default function EditClient({ token }: { token: string }) {
           </div>
         )}
         {phoneNotice && phoneMode === "closed" && <p className="mt-1 text-sm text-muted">{t.edit.phoneUpdated}</p>}
-        {phoneMode === "input" && (
+        {transport.allowPhoneChange && phoneMode === "input" && (
           <form onSubmit={startPhoneChange} noValidate className="space-y-3">
             <label htmlFor="newPhone" className="sr-only">
               {t.edit.newPhone}
@@ -375,7 +405,7 @@ export default function EditClient({ token }: { token: string }) {
             </div>
           </form>
         )}
-        {phoneMode === "otp" && pendingPhone && (
+        {transport.allowPhoneChange && phoneMode === "otp" && pendingPhone && (
           <OtpVerification phone={pendingPhone} purpose="change_phone" onVerified={onPhoneVerified} onCancel={() => setPhoneMode("input")} />
         )}
       </div>

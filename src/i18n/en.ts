@@ -204,6 +204,11 @@ export const en = {
   account: {
     heading: "Your account",
     username: "Username",
+    phone: "Your number",
+    memberSince: "Member since",
+    listing: "Your donor listing",
+    notListed: "You're not listed as a donor",
+    notListedBody: "Add your number to the directory and someone nearby may find you in an emergency. You can mark yourself unavailable at any time.",
     note: "Your username is recorded with every donor number you view.",
     signOut: "Sign out",
     signedOut: "You've been signed out.",

@@ -102,18 +102,44 @@ export async function recoverEditToken(proofInput: unknown): Promise<string> {
  * D3: resolves an edit token to its donor INSIDE the caller's transaction, so a token rotated by
  * /recover (or a deleted profile) can't still commit a change that started a moment earlier.
  */
-async function authorize(tx: Transaction, token: unknown): Promise<{ ref: DocumentReference; data: DocumentData }> {
-  if (typeof token !== "string" || !TOKEN_PATTERN.test(token)) throw new ApiError(404, "link_invalid");
-  const found = await tx.get(db().collection(COL.secrets).where("tokenHash", "==", hashToken(token)).limit(1));
-  if (found.empty) throw new ApiError(404, "link_invalid");
-  const donor = await tx.get(donorRef(found.docs[0].id));
-  if (!donor.exists) throw new ApiError(404, "link_invalid");
-  return { ref: donor.ref, data: donor.data()! };
+type Owned = { ref: DocumentReference; data: DocumentData };
+
+/** How the caller proved they own this profile. Resolved inside the caller's transaction (D3). */
+export type Owner = (tx: Transaction) => Promise<Owned>;
+
+/** The private edit link. */
+export const byToken =
+  (token: unknown): Owner =>
+  async (tx) => {
+    if (typeof token !== "string" || !TOKEN_PATTERN.test(token)) throw new ApiError(404, "link_invalid");
+    const found = await tx.get(db().collection(COL.secrets).where("tokenHash", "==", hashToken(token)).limit(1));
+    if (found.empty) throw new ApiError(404, "link_invalid");
+    const donor = await tx.get(donorRef(found.docs[0].id));
+    if (!donor.exists) throw new ApiError(404, "link_invalid");
+    return { ref: donor.ref, data: donor.data()! };
+  };
+
+/**
+ * A signed-in account, by the number it verified. The listing is found through phoneIndex rather
+ * than stored on the account, so the two can never disagree about who owns what. "no_profile"
+ * rather than "link_invalid": not being a donor is a normal state here, not a broken link.
+ */
+export const byPhone =
+  (phoneE164: string): Owner =>
+  async (tx) => {
+    const index = await tx.get(indexRef(phoneE164));
+    const donorId = index.data()?.donorId as string | undefined;
+    if (!donorId) throw new ApiError(404, "no_profile");
+    const donor = await tx.get(donorRef(donorId));
+    if (!donor.exists) throw new ApiError(404, "no_profile");
+    return { ref: donor.ref, data: donor.data()! };
+  };
+
+export async function loadProfile(owner: Owner): Promise<EditableProfile> {
+  return db().runTransaction(async (tx) => toEditable((await owner(tx)).data), { readOnly: true });
 }
 
-export async function loadProfileByToken(token: unknown): Promise<EditableProfile> {
-  return db().runTransaction(async (tx) => toEditable((await authorize(tx, token)).data), { readOnly: true });
-}
+export const loadProfileByToken = (token: unknown) => loadProfile(byToken(token));
 
 export interface ProfilePatch {
   available?: boolean;
@@ -126,12 +152,12 @@ export interface ProfilePatch {
   phone?: { phone: string; proof: unknown };
 }
 
-export async function updateProfileByToken(token: unknown, patch: ProfilePatch): Promise<EditableProfile> {
+export async function updateProfile(owner: Owner, patch: ProfilePatch): Promise<EditableProfile> {
   const proof = patch.phone ? verifyPhoneProof(patch.phone.proof, "change_phone") : null;
   if (proof && proof.phone !== patch.phone!.phone) throw new ApiError(401, "otp_invalid");
 
   const profile = await db().runTransaction(async (tx) => {
-    const { ref, data } = await authorize(tx, token);
+    const { ref, data } = await owner(tx);
     const updates: Record<string, unknown> = {};
     if (patch.available !== undefined) updates.available = patch.available;
     if (patch.lastDonated !== undefined) updates.lastDonated = ts(patch.lastDonated);
@@ -156,6 +182,8 @@ export async function updateProfileByToken(token: unknown, patch: ProfilePatch):
   return profile;
 }
 
+export const updateProfileByToken = (token: unknown, patch: ProfilePatch) => updateProfile(byToken(token), patch);
+
 /** Reads (new index, old index, blocklist, proof) now; returns the writes to run afterwards. */
 async function preparePhoneChange(
   tx: Transaction,
@@ -179,9 +207,9 @@ async function preparePhoneChange(
   };
 }
 
-export async function deleteProfileByToken(token: unknown): Promise<void> {
+export async function deleteProfile(owner: Owner): Promise<void> {
   await db().runTransaction(async (tx) => {
-    const { ref, data } = await authorize(tx, token);
+    const { ref, data } = await owner(tx);
     const index = await tx.get(indexRef(String(data.phone)));
     tx.delete(ref);
     tx.delete(secretRef(ref.id));
@@ -190,6 +218,8 @@ export async function deleteProfileByToken(token: unknown): Promise<void> {
   });
   invalidateDirectory();
 }
+
+export const deleteProfileByToken = (token: unknown) => deleteProfile(byToken(token));
 
 /** Admin delete (optionally blocking the number from coming back, L2). Atomic with the index. */
 export async function deleteDonorById(id: string, block: { reason: string } | null): Promise<{ deleted: boolean }> {

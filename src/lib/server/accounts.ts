@@ -88,6 +88,25 @@ export async function loadAccount(accountId: string): Promise<Account | null> {
   return { id: snap.id, username: data.username, suspended: !!data.suspended };
 }
 
+export interface AccountDetail extends Account {
+  phone: string;
+  createdAt: Date | null;
+}
+
+/** Everything the profile page shows about the account itself. */
+export async function loadAccountDetail(accountId: string): Promise<AccountDetail | null> {
+  const snap = await adminDb().collection(COL.accounts).doc(accountId).get();
+  if (!snap.exists) return null;
+  const d = snap.data() as AccountDoc;
+  return {
+    id: snap.id,
+    username: d.username,
+    suspended: !!d.suspended,
+    phone: d.phone,
+    createdAt: d.createdAt?.toDate?.() ?? null,
+  };
+}
+
 /** Which account owns a number, if any. The profile uses this to find your donor listing. */
 export async function accountIdForPhone(phoneE164: string): Promise<string | null> {
   const snap = await adminDb().collection(COL.accountPhones).doc(phoneKey(phoneE164)).get();
