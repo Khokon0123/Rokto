@@ -41,22 +41,25 @@ interface AccountDoc {
  * The OTP proof is spent in this same transaction (S11), so a replayed proof cannot mint a second
  * account, and a failed write leaves the proof unspent for an honest retry.
  */
-export async function signInAccount(proof: ProofData): Promise<Account & { created: boolean }> {
+/**
+ * Creates the account on first use, or returns the one this number already has. The SAME username
+ * every time - someone who clears their cookies does not get a fresh identity, which is what makes
+ * the audit trail worth keeping.
+ *
+ * No proof is claimed here: the caller has just checked a code texted to this number, which is a
+ * stronger statement than a proof token. Callers holding only a proof use signInAccount instead.
+ */
+export async function ensureAccount(phoneE164: string): Promise<Account & { created: boolean }> {
   const db = adminDb();
-  const lookupRef = db.collection(COL.accountPhones).doc(phoneKey(proof.phone));
+  const lookupRef = db.collection(COL.accountPhones).doc(phoneKey(phoneE164));
 
   return db.runTransaction(async (tx) => {
-    // Reads first, every one of them: Firestore forbids a read after a write in a transaction.
-    // The proof's subject is the phone hash, not the account id, so it stays stable across a
-    // number change and across the account being recreated.
-    const claim = await claimProof(tx, proof, phoneKey(proof.phone));
     const lookup = await tx.get(lookupRef);
     const existingId = lookup.data()?.accountId as string | undefined;
     const existing = existingId ? await tx.get(db.collection(COL.accounts).doc(existingId)) : null;
 
     if (existing?.exists) {
       const data = existing.data() as AccountDoc;
-      claim.commit();
       tx.update(existing.ref, { lastActiveAt: FieldValue.serverTimestamp() });
       return { id: existing.id, username: data.username, suspended: !!data.suspended, created: false };
     }
@@ -72,12 +75,20 @@ export async function signInAccount(proof: ProofData): Promise<Account & { creat
     // A lookup pointing at an account that no longer exists (deleted) is replaced, not kept.
     const ref = db.collection(COL.accounts).doc();
     const now = FieldValue.serverTimestamp();
-    claim.commit();
-    tx.set(ref, { username, phone: proof.phone, createdAt: now, lastActiveAt: now, suspended: false, revealCount: 0 });
+    tx.set(ref, { username, phone: phoneE164, createdAt: now, lastActiveAt: now, suspended: false, revealCount: 0 });
     tx.set(db.collection(COL.usernames).doc(username), { accountId: ref.id, at: now });
     tx.set(lookupRef, { accountId: ref.id, at: now });
     return { id: ref.id, username, suspended: false, created: true };
   });
+}
+
+/** Same thing for a caller holding a proof rather than a freshly checked code (S11). */
+export async function signInAccount(proof: ProofData): Promise<Account & { created: boolean }> {
+  await adminDb().runTransaction(async (tx) => {
+    const claim = await claimProof(tx, proof, phoneKey(proof.phone));
+    claim.commit();
+  });
+  return ensureAccount(proof.phone);
 }
 
 /** The live record behind a session cookie. Null when the account was deleted. */

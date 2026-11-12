@@ -193,7 +193,7 @@ export async function finishOtp(input: {
   code: unknown;
   challengeId: unknown;
   purpose: unknown;
-}): Promise<{ proof: string }> {
+}): Promise<{ proof: string; phone: string; purpose: OtpPurpose }> {
   const phone = parsePhone(input.phone);
   const purpose = parsePurpose(input.purpose);
   const code = typeof input.code === "string" ? onlyDigits(input.code) : ""; // E1: ০-৯ welcome
@@ -227,7 +227,8 @@ export async function finishOtp(input: {
     await hit(failKey, Number.MAX_SAFE_INTEGER, 86_400);
     throw new ApiError(400, "otp_wrong");
   }
-  return { proof: signProof({ phone, purpose, jti: b64(randomBytes(16)), exp: Date.now() + OTP_PROOF_TTL_SECONDS * 1000 }) };
+  const proof = signProof({ phone, purpose, jti: b64(randomBytes(16)), exp: Date.now() + OTP_PROOF_TTL_SECONDS * 1000 });
+  return { proof, phone, purpose };
 }
 
 export interface ProofData {

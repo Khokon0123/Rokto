@@ -10,14 +10,15 @@ test.beforeEach(async ({ context }) => {
 test("register -> edit link -> edit -> search -> recover (old link dies) -> delete", async ({ page }) => {
   const phone = "+8801712345678";
 
-  // Register
-  await page.goto("/register");
+  // Register. ?donor=1 is how the homepage's "Register as a donor" card arrives: the listing box
+  // is already ticked, so the donor fields are on screen.
+  await page.goto("/register?donor=1");
   await page.getByLabel(/^Name/).fill("Rahim Uddin");
   await page.getByLabel(/^Phone number/).fill("01712345678");
   await page.getByLabel(/^Blood group/).selectOption("O-");
   await page.locator("#register-area").fill("Kotw");
   await page.getByRole("option", { name: /Kotwali/ }).click();
-  await page.getByRole("checkbox").check();
+  await page.locator("#consent").check(); // two checkboxes now: list-me-as-a-donor, and consent
   await page.getByRole("button", { name: "Send verification code" }).click();
   await verify(page, phone);
   await expect(page.getByText("You're registered")).toBeVisible();
@@ -33,10 +34,8 @@ test("register -> edit link -> edit -> search -> recover (old link dies) -> dele
   const toggle = page.getByRole("switch");
   await expect(toggle).toHaveAttribute("aria-checked", "true");
 
-  // Searching needs an account now: signed out, /search redirects to /signin and comes back.
-  await page.goto("/search");
-  await expect(page).toHaveURL(/\/signin\?next=/);
-  await signIn(page, "+8801812345678", "01812345678");
+  // No sign-in step here: registering as a donor already opened an account and set the session
+  // (one code does both), so this journey arrives at the search signed in.
 
   // Search finds the donor; the number is revealed on a tap (S2)
   // The blood group filter is a row of chips now, not a select: one tap, not open-scroll-confirm.
@@ -98,4 +97,18 @@ test("security headers are set (S9)", async ({ request }) => {
   expect(res.headers()["x-content-type-options"]).toBe("nosniff");
   expect(res.headers()["content-security-policy-report-only"] ?? res.headers()["content-security-policy"]).toContain("frame-ancestors 'none'");
   expect(res.headers()["x-powered-by"]).toBeUndefined();
+});
+
+test("signed out, searching asks you to join first", async ({ page }) => {
+  // The gate is on the page, not on the homepage button, so a typed URL hits it too - and the
+  // filters survive the round trip.
+  await page.goto("/search?group=O-");
+  await expect(page).toHaveURL(/\/register\?next=/);
+  await expect(page.getByLabel(/^Phone number/)).toBeVisible();
+
+  // Someone who only wants to find blood is not asked to list themselves as a donor.
+  await expect(page.getByLabel(/^Blood group/)).toHaveCount(0);
+
+  await signIn(page, "+8801812345678", "01812345678");
+  await expect(page).toHaveURL(/group=O-/);
 });

@@ -7,15 +7,15 @@ import { fmt } from "@/i18n";
 import { formatNumber } from "@/i18n/locale";
 import { formatLocalPhone } from "@/lib/phone";
 import { onlyDigits } from "@/lib/digits";
-import { usePhoneOtp, type OtpPurpose } from "@/lib/usePhoneOtp";
+import { usePhoneOtp, type OtpPurpose, type VerifiedPhone } from "@/lib/usePhoneOtp";
 import { btnPrimary, cardClass, errorTextClass, inputClass, labelClass } from "./styles";
 
 interface Props {
   phone: string; // E.164
   /** Which endpoint the resulting proof is for (S11). */
   purpose: OtpPurpose;
-  /** Called once with a signed proof that this phone number was just verified. */
-  onVerified: (proof: string) => void;
+  /** Called once the code is accepted: the proof, plus the username when an account was opened. */
+  onVerified: (verified: VerifiedPhone) => void;
   onCancel: () => void;
 }
 
@@ -44,8 +44,8 @@ export default function OtpVerification({ phone, purpose, onVerified, onCancel }
   async function submit(e: FormEvent) {
     e.preventDefault();
     if (code.trim().length < 6) return;
-    const proof = await verifyCode(code);
-    if (proof) onVerified(proof);
+    const verified = await verifyCode(code);
+    if (verified) onVerified(verified);
   }
 
   async function resend() {

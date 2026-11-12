@@ -38,9 +38,11 @@ export async function verify(page: Page, phoneE164: string) {
  * be sent two codes inside the resend cooldown anyway.
  */
 export async function signIn(page: Page, phoneE164: string, local: string) {
-  await page.goto("/signin");
-  await page.getByLabel("Your mobile number").fill(local);
-  await page.getByRole("button", { name: "Send code" }).click();
+  // Already sent here by the gate? Stay put - navigating again would drop the ?next= that carries
+  // the search they were trying to reach.
+  if (!page.url().includes("/register")) await page.goto("/register");
+  await page.getByLabel(/^Phone number/).fill(local);
+  await page.getByRole("button", { name: "Send verification code" }).click();
   await verify(page, phoneE164);
   await page.getByRole("link", { name: "Find donors" }).click();
   await page.waitForURL(/\/search/);

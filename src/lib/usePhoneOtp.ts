@@ -9,6 +9,13 @@ import { solveCaptcha } from "@/lib/turnstile";
 export type OtpStatus = "idle" | "sending" | "sent" | "verifying";
 export type OtpPurpose = "register" | "recover" | "change_phone" | "signin";
 
+export interface VerifiedPhone {
+  proof: string;
+  /** Present for the purposes that open an account; the cookie is already set when it is. */
+  username?: string;
+  created?: boolean;
+}
+
 /**
  * One-time phone verification by SMS (our own /api/otp routes). This is NOT a login: a correct
  * code returns a short-lived signed proof that ONE endpoint (named by `purpose`) accepts.
@@ -46,20 +53,24 @@ export function usePhoneOtp(purpose: OtpPurpose) {
     [purpose, locale],
   );
 
-  /** Returns the signed proof of phone ownership, or null if the code was wrong. */
+  /**
+   * Returns the signed proof of phone ownership, or null if the code was wrong. For the purposes
+   * that also open an account ("register", "signin") the answer carries the username as well: one
+   * code does both, so there is no second round trip to find out who you are.
+   */
   const verifyCode = useCallback(
-    async (code: string): Promise<string | null> => {
+    async (code: string): Promise<VerifiedPhone | null> => {
       if (!sent.current) return null;
       setErrorCode(null);
       setStatus("verifying");
-      const res = await apiCall<{ proof: string }>("/api/otp/verify", "POST", {
+      const res = await apiCall<VerifiedPhone>("/api/otp/verify", "POST", {
         phone: sent.current.phone,
         code: onlyDigits(code),
         challengeId: sent.current.challengeId,
         purpose,
       });
       setStatus("sent");
-      if (res.ok && res.data) return res.data.proof;
+      if (res.ok && res.data) return res.data;
       setErrorCode(res.error ?? "generic");
       return null;
     },

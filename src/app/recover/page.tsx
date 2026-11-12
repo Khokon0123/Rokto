@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import EditLinkCard from "@/components/EditLinkCard";
+import type { VerifiedPhone } from "@/lib/usePhoneOtp";
 import OtpVerification from "@/components/OtpVerification";
 import { useErrorMessage, useT } from "@/components/LocaleProvider";
 import { btnPrimary, btnSecondary, errorTextClass, inputClass, labelClass } from "@/components/styles";
@@ -33,7 +34,7 @@ export default function RecoverPage() {
     setStep("otp");
   }
 
-  async function onVerified(proof: string) {
+  async function onVerified({ proof }: VerifiedPhone) {
     setStep("working");
     const res = await apiCall<{ editToken: string }>("/api/recover", "POST", { proof });
     if (res.ok && res.data) {

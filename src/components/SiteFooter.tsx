@@ -94,8 +94,8 @@ export default function SiteFooter() {
       >
         {/* Phase 1's only way in: nothing on the site requires an account yet, so this is here to
             let people create one (and to show how many choose to) before anything is gated. */}
-        {pathname !== "/signin" && pathname !== "/account" && (
-          <Link href="/signin" className="inline-flex min-h-11 items-center underline focus-visible:outline-white">
+        {pathname !== "/register" && pathname !== "/account" && (
+          <Link href="/register" className="inline-flex min-h-11 items-center underline focus-visible:outline-white">
             {t.account.signIn}
           </Link>
         )}

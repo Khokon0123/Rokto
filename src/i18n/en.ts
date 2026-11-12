@@ -3,7 +3,7 @@
 export const en = {
   hero: {
     home: "Find blood donors in Chattogram",
-    register: "Register as a donor",
+    register: "Join Rokto",
     team: "The team behind Rokto",
     signin: "Sign in to Rokto",
     account: "Your account",
@@ -173,6 +173,10 @@ export const en = {
       "I agree that my name, blood group, area, last donation date and (if I add it) approximate location will be shown publicly, and that my phone number will be shown to people who tap to call me. Anyone who sees this could copy it. I am 18 or older.",
     submit: "Send verification code",
     saving: "Saving your profile...",
+    accountTitle: "Your account is ready",
+    asDonor: "Also list me as a blood donor",
+    asDonorHint: "Optional. Tick this only if you're willing to give blood. You can add or remove your listing later from your profile.",
+    accountIntro: "Enter your mobile number. We text you a code, and you come out with a Rokto account and your own username.",
     successTitle: "You're registered",
     successExisting:
       "This number already had a profile. We updated it and made a new private link. Your old link no longer works.",

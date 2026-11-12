@@ -20,7 +20,7 @@ export default async function SearchPage({
       if (typeof v === "string") query.set(k, v);
     }
     const q = query.toString();
-    redirect(`/signin?next=${encodeURIComponent(q ? `/search?${q}` : "/search")}`);
+    redirect(`/register?next=${encodeURIComponent(q ? `/search?${q}` : "/search")}`);
   }
 
   return (

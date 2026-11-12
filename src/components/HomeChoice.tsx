@@ -30,7 +30,7 @@ export default function HomeChoice() {
           <h2 className="mt-3 text-xl font-bold text-ink">{t.home.choice.searchTitle}</h2>
           <p className="mt-1 text-base leading-relaxed text-muted">{t.home.choice.searchBody}</p>
         </div>
-        <Link href="/search" className={`${btnPrimary} mt-auto w-full`}>
+        <Link href="/register?next=%2Fsearch" className={`${btnPrimary} mt-auto w-full`}>
           {t.home.choice.searchCta}
         </Link>
       </div>
@@ -50,7 +50,7 @@ export default function HomeChoice() {
             ))}
           </ul>
         </div>
-        <Link href="/register" className={`${btnSecondary} mt-auto w-full`}>
+        <Link href="/register?donor=1" className={`${btnSecondary} mt-auto w-full`}>
           {t.home.choice.registerCta}
         </Link>
       </div>

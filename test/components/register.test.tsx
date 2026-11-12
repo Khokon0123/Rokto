@@ -5,6 +5,13 @@ import RegisterPage from "@/app/register/page";
 import { fakeFetch, renderEn } from "../support/render";
 
 vi.mock("@/components/LocationField", () => ({ default: () => null }));
+// /register is one page for two jobs now. These tests are about the DONOR path, so they arrive the
+// way the "Register as a donor" card sends people: with the listing box already ticked.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn(), push: vi.fn(), replace: vi.fn() }),
+  usePathname: () => "/register",
+  useSearchParams: () => new URLSearchParams("donor=1"),
+}));
 afterEach(() => vi.unstubAllGlobals());
 
 describe("F9: a failed save keeps the verified phone", () => {
@@ -23,7 +30,7 @@ describe("F9: a failed save keeps the verified phone", () => {
     const area = document.getElementById("register-area") as HTMLInputElement;
     fireEvent.change(area, { target: { value: "Kotwali" } });
     fireEvent.click(await screen.findByRole("option", { name: /Kotwali/ }));
-    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(document.getElementById("consent")!);
     fireEvent.click(screen.getByRole("button", { name: "Send verification code" }));
 
     const code = await screen.findByLabelText("6-digit code");
@@ -45,5 +52,34 @@ describe("F9: a failed save keeps the verified phone", () => {
     fireEvent.click(screen.getByRole("button", { name: "Send verification code" }));
     await waitFor(() => expect(document.activeElement?.id).toBe("name"));
     expect(screen.getByLabelText(/^Name/)).toHaveAttribute("aria-invalid", "true");
+  });
+});
+
+describe("one page, two jobs", () => {
+  it("unticking the donor box leaves only a phone number to fill in", async () => {
+    const { fn, calls } = fakeFetch({
+      "POST /api/otp/send": () => [200, { challengeId: "c1" }],
+      "POST /api/otp/verify": () => [200, { proof: "p", username: "shanto-alo-472", created: true }],
+    });
+    vi.stubGlobal("fetch", fn);
+    renderEn(<RegisterPage />);
+
+    fireEvent.click(document.getElementById("asDonor")!);
+    // Someone who only wants to find blood is not asked for their blood group, area or consent.
+    expect(screen.queryByLabelText(/^Name/)).toBeNull();
+    expect(screen.queryByLabelText(/^Blood group/)).toBeNull();
+    expect(document.getElementById("consent")).toBeNull();
+
+    fireEvent.change(screen.getByLabelText(/^Phone number/), { target: { value: "01712345678" } });
+    fireEvent.click(screen.getByRole("button", { name: "Send verification code" }));
+    fireEvent.change(await screen.findByLabelText("6-digit code"), { target: { value: "123456" } });
+    fireEvent.click(screen.getByRole("button", { name: "Verify" }));
+
+    // The username comes back with the code check, and no donor listing is written.
+    expect(await screen.findByText("shanto-alo-472")).toBeTruthy();
+    expect(calls.some((c) => c.key.startsWith("POST /api/donors"))).toBe(false);
+    // Its SMS comes out of the sign-in budget, not the one protecting donor registration.
+    const send = calls.find((c) => c.key === "POST /api/otp/send");
+    expect((send?.body as { purpose?: string })?.purpose).toBe("signin");
   });
 });

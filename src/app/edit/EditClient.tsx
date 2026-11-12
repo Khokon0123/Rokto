@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import AreaAutocomplete from "@/components/AreaAutocomplete";
+import type { VerifiedPhone } from "@/lib/usePhoneOtp";
 import BloodBadge from "@/components/BloodBadge";
 import LocationField from "@/components/LocationField";
 import OtpVerification from "@/components/OtpVerification";
@@ -165,7 +166,7 @@ export default function EditClient({ transport }: { transport: ProfileTransport 
     setPhoneMode("otp");
   }
 
-  async function onPhoneVerified(proof: string) {
+  async function onPhoneVerified({ proof }: VerifiedPhone) {
     setSave("saving");
     const { res } = await enqueue({ phone: pendingPhone, proof });
     if (res.ok && res.data) {
