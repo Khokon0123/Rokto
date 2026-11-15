@@ -8,6 +8,7 @@ import { apiCall } from "@/lib/api";
 export default function AdminLoginPage() {
   const t = useT();
   const errorMessage = useErrorMessage();
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -16,7 +17,7 @@ export default function AdminLoginPage() {
     e.preventDefault();
     setError(null);
     setBusy(true);
-    const res = await apiCall<{ ok: boolean }>("/api/admin/login", "POST", { password });
+    const res = await apiCall<{ ok: boolean }>("/api/admin/login", "POST", { email, password });
     if (res.ok) {
       // Hard navigation, not router.push: the next page is a Server Component that reads the
       // cookie we just got, and a client-side nav can beat that cookie to the router's cache.
@@ -38,6 +39,22 @@ export default function AdminLoginPage() {
           </p>
         )}
         <div>
+          <label htmlFor="admin-email" className={labelClass}>
+            {t.admin.email}
+          </label>
+          <input
+            id="admin-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="username"
+            inputMode="email"
+            autoFocus
+            className={inputClass}
+          />
+          <p className="mt-1 text-sm text-muted">{t.admin.emailHint}</p>
+        </div>
+        <div>
           <label htmlFor="admin-password" className={labelClass}>
             {t.admin.password}
           </label>
@@ -47,7 +64,6 @@ export default function AdminLoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="current-password"
-            autoFocus
             className={inputClass}
           />
         </div>

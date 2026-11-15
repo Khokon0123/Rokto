@@ -6,7 +6,9 @@ import { isBloodGroup, type BloodGroup } from "@/lib/bloodGroups";
 import { adminDb } from "@/lib/firebase/admin";
 import type { GeoPoint } from "@/lib/geo";
 import { normalizeBdPhone } from "@/lib/phone";
-import { COL, phoneKey } from "./keys";
+import { COL, phoneKey, sha256 } from "./keys";
+import { adminLabel, currentAdmin } from "./adminAuth";
+import { clientIp } from "./rateLimit";
 
 export interface AdminDonorRecord {
   id: string;
@@ -82,8 +84,24 @@ export async function exportAllDonors(): Promise<AdminDonorRecord[]> {
 }
 
 /** S7: who did what, when, from where. Private collection; never shown publicly. */
-export async function writeAudit(action: string, target: string, ip: string, extra: Record<string, unknown> = {}): Promise<void> {
+/**
+ * S7: one row per admin action. `by` is the point of per-person logins - "who deleted this donor"
+ * used to be unanswerable. The IP is stored hashed, as it always was.
+ */
+export async function writeAudit(
+  action: string,
+  target: string,
+  req: Request,
+  extra: Record<string, unknown> = {},
+): Promise<void> {
   await adminDb()
     .collection(COL.audit)
-    .add({ action, target, ip, ...extra, at: FieldValue.serverTimestamp() });
+    .add({
+      action,
+      target,
+      ip: sha256(clientIp(req)).slice(0, 16),
+      by: adminLabel(currentAdmin(req) ?? { email: null }),
+      ...extra, // an explicit `by` wins: at login there is no cookie on the request yet
+      at: FieldValue.serverTimestamp(),
+    });
 }

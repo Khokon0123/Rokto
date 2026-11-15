@@ -133,6 +133,9 @@ export const ACCOUNT_USERNAME_TRIES = 8;
 /** How long an admin login session lasts before needing the password again (S7). */
 export const ADMIN_SESSION_TTL_SECONDS = 60 * 60 * 12; // 12 hours
 
+/** Minimum length for a per-person admin password (set by `npm run admin:add`). */
+export const ADMIN_MIN_PASSWORD_LENGTH = 12;
+
 /** Brute-force guard on /api/admin/login (per IP). */
 export const ADMIN_LOGIN_MAX_ATTEMPTS = 8;
 export const ADMIN_LOGIN_WINDOW_SECONDS = 900; // 15 minutes

@@ -3,8 +3,6 @@ import { ApiError, handle, json, readJson } from "@/lib/server/http";
 import { deleteTeamMember, moveTeamMember, updateTeamMember } from "@/lib/server/team";
 import { TEAM_BODY_LIMIT, validateTeamMember } from "@/lib/team";
 import { writeAudit } from "@/lib/server/adminDonors";
-import { sha256 } from "@/lib/server/keys";
-import { clientIp } from "@/lib/server/rateLimit";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -15,16 +13,15 @@ export function PATCH(req: Request, { params }: Ctx) {
     const { id } = await params;
     if (!id) throw new ApiError(400, "bad_request");
     const body = await readJson(req, TEAM_BODY_LIMIT);
-    const ipHash = sha256(clientIp(req)).slice(0, 16);
     if (body.move === "up" || body.move === "down") {
       await moveTeamMember(id, body.move);
-      await writeAudit("team_move", id, ipHash, { direction: body.move });
+      await writeAudit("team_move", id, req, { direction: body.move });
       return json({ ok: true });
     }
     const result = validateTeamMember(body);
     if ("error" in result) throw new ApiError(400, result.error);
     await updateTeamMember(id, result.fields);
-    await writeAudit("team_edit", id, ipHash);
+    await writeAudit("team_edit", id, req);
     return json({ ok: true });
   });
 }
@@ -37,7 +34,7 @@ export function DELETE(req: Request, { params }: Ctx) {
     if (!id) throw new ApiError(400, "bad_request");
     await readJson(req);
     await deleteTeamMember(id);
-    await writeAudit("team_delete", id, sha256(clientIp(req)).slice(0, 16));
+    await writeAudit("team_delete", id, req);
     return json({ ok: true });
   });
 }

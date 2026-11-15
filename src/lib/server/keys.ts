@@ -11,6 +11,7 @@ export const COL = {
   usedProofs: "usedProofs", // {jti} -> { purpose, subject, uses, expireAt }  (S11)
   reports: "reports", // L2
   audit: "adminAudit", // S7
+  adminUsers: "adminUsers", // {sha256(email)} -> { email, salt, hash, disabled }  one login per person
   accounts: "accounts", // {auto} -> { username, phone, createdAt, suspended, ... }
   accountPhones: "accountPhones", // {sha256(phone)} -> { accountId }  one account per number, and repointable
   usernames: "usernames", // {username} -> { accountId }  uniqueness guard, claimed in a transaction

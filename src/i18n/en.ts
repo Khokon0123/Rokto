@@ -296,6 +296,8 @@ export const en = {
     exportHint: "Save a copy every week somewhere safe (see the README backup routine).",
     teamSeed: "Add the starting team",
     teamSeedHint: "The team list is empty in the database. Copy in the starting team from the site's settings?",
+    email: "Email",
+    emailHint: "Leave blank to use the shared recovery password.",
     loginTitle: "Admin login",
     password: "Password",
     login: "Log in",

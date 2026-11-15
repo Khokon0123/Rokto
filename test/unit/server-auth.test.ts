@@ -30,7 +30,7 @@ describe("S7: admin sessions", () => {
   });
   it("sessions expire after 12 hours and can't be forged", () => {
     vi.stubEnv("ADMIN_PASSWORD", "first-password-long-enough");
-    const old = signAdminSession(Date.now() - 13 * 3600_000);
+    const old = signAdminSession({ email: null }, Date.now() - 13 * 3600_000);
     expect(isValidAdminSession(old)).toBe(false);
     const [payload] = signAdminSession().split(".");
     expect(isValidAdminSession(`${payload}.AAAA`)).toBe(false);

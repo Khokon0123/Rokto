@@ -25,7 +25,7 @@ describe("firestore.rules", () => {
   it("denies limit(500)", () => assertFails(getDocs(query(collection(db(), "donors"), limit(500)))));
   it("denies a get by id", () => assertFails(getDoc(doc(db(), "donors/d1"))));
   it("denies every private collection", async () => {
-    for (const c of ["donorSecrets", "phoneIndex", "otpChallenges", "rateLimits", "usedProofs", "reports", "adminAudit", "team", "blockedPhones", "accounts", "accountPhones", "usernames", "reveals", "revealDedup"]) {
+    for (const c of ["donorSecrets", "phoneIndex", "otpChallenges", "rateLimits", "usedProofs", "reports", "adminAudit", "adminUsers", "team", "blockedPhones", "accounts", "accountPhones", "usernames", "reveals", "revealDedup"]) {
       await assertFails(getDoc(doc(db(), `${c}/x`)));
     }
   });

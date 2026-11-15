@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/server/adminAuth";
 import { exportAllDonors, writeAudit } from "@/lib/server/adminDonors";
 import { handle } from "@/lib/server/http";
-import { sha256 } from "@/lib/server/keys";
-import { clientIp } from "@/lib/server/rateLimit";
 
 const csvCell = (v: unknown) => {
   const s = v === null || v === undefined ? "" : String(v);
@@ -18,7 +16,7 @@ export function GET(req: Request) {
     requireAdmin(req);
     const format = new URL(req.url).searchParams.get("format") === "csv" ? "csv" : "json";
     const donors = await exportAllDonors();
-    await writeAudit("donor_export", format, sha256(clientIp(req)).slice(0, 16), { count: donors.length });
+    await writeAudit("donor_export", format, req, { count: donors.length });
     const stamp = new Date().toISOString().slice(0, 10);
     const headers = {
       "Cache-Control": "no-store",

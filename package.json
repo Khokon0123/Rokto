@@ -12,7 +12,8 @@
     "test:coverage": "vitest run --coverage",
     "test:emulator": "firebase emulators:exec --only firestore --project demo-rokto \"vitest run --config vitest.emulator.config.ts\"",
     "test:e2e": "firebase emulators:exec --only firestore --project demo-rokto \"playwright test\"",
-    "migrate": "tsx scripts/migrate.ts"
+    "migrate": "tsx scripts/migrate.ts",
+    "admin:add": "tsx --env-file=.env.local --conditions=react-server scripts/add-admin.ts"
   },
   "dependencies": {
     "firebase-admin": "^14.5.0",
