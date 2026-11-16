@@ -50,7 +50,11 @@ export const DEFAULT_TEAM = [
  *  EMPTY ON PURPOSE: the section does not render until there is a real partnership to name.
  *  Add one like the ORGS above - name, optional url, optional logo under /public/partners/ -
  *  and only when the partnership actually exists. A name here is a public claim about them. */
-export const PARTNERS: OrgCredit[] = [];
+export const PARTNERS: OrgCredit[] = [
+  { name: "Parkview", url: null },
+  { name: "Alif Hospital", url: null },
+  { name: "Chittagong Blood Bank", url: null },
+];
 
 /** Donors who gave blood within this many days are listed below ready donors.
  *  PENDING OWNER + MEDICAL DECISION #7 (L3): one interval for everyone today. */
