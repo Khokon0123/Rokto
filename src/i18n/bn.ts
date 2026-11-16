@@ -25,6 +25,7 @@ export const bn: Messages = {
   footer: {
     contact: "তথ্য বা অপব্যবহার সংক্রান্ত অনুরোধ: {email}",
     poweredBy: "{org} দ্বারা পরিচালিত",
+    partneredWith: "যাদের সঙ্গে আমরা কাজ করি",
   },
   home: {
     choice: {

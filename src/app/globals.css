@@ -151,3 +151,38 @@ body {
     background-position: center, right 44%;
   }
 }
+
+/* Partner strip: one track, its contents duplicated, slid left by exactly half its width so the
+   seam never shows. Paused on hover and whenever anything inside it has keyboard focus, because
+   a moving link is one you cannot click. */
+.rk-marquee {
+  display: flex;
+  width: max-content;
+  animation: rk-marquee-slide var(--rk-marquee-seconds, 40s) linear infinite;
+}
+.rk-marquee-window:hover .rk-marquee,
+.rk-marquee-window:focus-within .rk-marquee {
+  animation-play-state: paused;
+}
+@keyframes rk-marquee-slide {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Reduced motion: no movement at all. The strip becomes an ordinary centred, wrapping row,
+   and the duplicate copy is hidden so nothing reads twice. */
+@media (prefers-reduced-motion: reduce) {
+  .rk-marquee {
+    animation: none;
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .rk-marquee-copy {
+    display: none;
+  }
+}

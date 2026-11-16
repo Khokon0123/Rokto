@@ -3,7 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useT } from "@/components/LocaleProvider";
-import { ORGS } from "@/config/app";
+import PartnerStrip from "@/components/PartnerStrip";
+import { ORGS, PARTNERS } from "@/config/app";
 
 /** Section radius matches the action cards; the shared `cardClass` is left alone for other pages. */
 const panel = "rounded-[18px] border border-line bg-surface p-6";
@@ -114,6 +115,19 @@ export default function HomeInfo() {
           ))}
         </ul>
       </section>
+
+      {/* Blood banks and hospitals we work with. Renders nothing until PARTNERS has someone in
+          it - an empty "Partnered with" heading would claim more than it should. */}
+      {PARTNERS.length > 0 && (
+        <section aria-labelledby="partners" className="text-center">
+          <p className={eyebrow} id="partners">
+            {t.footer.partneredWith}
+          </p>
+          <div className="mt-4">
+            <PartnerStrip partners={PARTNERS} label={t.footer.partneredWith} />
+          </div>
+        </section>
+      )}
 
       {/* Donors who lost their edit link used to have to find a grey link at the bottom of
           /search to get a new one. Most never did, so their details went stale instead. */}

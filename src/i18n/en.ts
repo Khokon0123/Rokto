@@ -23,6 +23,7 @@ export const en = {
   footer: {
     contact: "Data or abuse requests: {email}",
     poweredBy: "Powered by {org}",
+    partneredWith: "Partnered with",
   },
   home: {
     choice: {
