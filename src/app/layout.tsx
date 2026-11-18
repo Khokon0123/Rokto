@@ -85,7 +85,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <LocaleProvider initialLocale={locale}>
           <SiteHeader stats={stats} account={account} />
           <main className="mx-auto w-full max-w-2xl flex-1 px-4 pb-12 pt-6">{children}</main>
-          <SiteFooter />
+          <SiteFooter signedIn={!!account} />
         </LocaleProvider>
       </body>
     </html>

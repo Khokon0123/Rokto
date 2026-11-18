@@ -60,7 +60,7 @@ function OrgCredit() {
   );
 }
 
-export default function SiteFooter() {
+export default function SiteFooter({ signedIn = false }: { signedIn?: boolean }) {
   const t = useT();
   const pathname = usePathname();
   const [before, after] = fmt(t.footer.poweredBy, { org: "\u0000" }).split("\u0000");
@@ -92,9 +92,9 @@ export default function SiteFooter() {
         aria-label={t.nav.privacy}
         className="mx-auto flex w-full max-w-2xl flex-wrap items-center justify-center gap-x-4 px-4 pb-5 text-center text-sm text-white/85"
       >
-        {/* Phase 1's only way in: nothing on the site requires an account yet, so this is here to
-            let people create one (and to show how many choose to) before anything is gated. */}
-        {pathname !== "/register" && pathname !== "/account" && (
+        {/* Only for people who are not signed in: offering "Sign in" to someone who already is
+            reads as a bug, and it was one. */}
+        {!signedIn && pathname !== "/register" && pathname !== "/account" && (
           <Link href="/register" className="inline-flex min-h-11 items-center underline focus-visible:outline-white">
             {t.account.signIn}
           </Link>
