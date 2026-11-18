@@ -129,7 +129,7 @@ describe("reveal pass", () => {
 describe("H2: production configuration", () => {
   it("lists every missing piece and refuses to start", () => {
     vi.stubEnv("NODE_ENV", "production");
-    for (const k of ["OTP_SECRET", "ADMIN_PASSWORD", "ADMIN_SESSION_SECRET", "TURNSTILE_SECRET_KEY", "NEXT_PUBLIC_TURNSTILE_SITE_KEY", "NEXT_PUBLIC_SITE_URL", "FIREBASE_ADMIN_PROJECT_ID", "FIREBASE_ADMIN_CLIENT_EMAIL", "FIREBASE_ADMIN_PRIVATE_KEY", "FIRESTORE_EMULATOR_HOST", "SMS_PROVIDER"]) {
+    for (const k of ["OTP_SECRET", "ADMIN_PASSWORD", "ADMIN_SESSION_SECRET", "TURNSTILE_SECRET_KEY", "NEXT_PUBLIC_TURNSTILE_SITE_KEY", "NEXT_PUBLIC_SITE_URL", "FIREBASE_ADMIN_PROJECT_ID", "FIREBASE_ADMIN_CLIENT_EMAIL", "FIREBASE_ADMIN_PRIVATE_KEY", "FIRESTORE_EMULATOR_HOST", "SMS_PROVIDER", "VERCEL", "TRUSTED_IP_HEADER"]) {
       vi.stubEnv(k, "");
     }
     const problems = configIssues().map((i) => i.subsystem);
@@ -149,6 +149,7 @@ describe("H2: production configuration", () => {
       TURNSTILE_SECRET_KEY: "t",
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: "t",
       NEXT_PUBLIC_SITE_URL: "https://www.roktoctg.com",
+      TRUSTED_IP_HEADER: "cf-connecting-ip",
       SMS_PROVIDER: "bulksmsdhaka",
       BULKSMSDHAKA_API_KEY: "k",
     };
@@ -192,5 +193,13 @@ describe("usernames", () => {
   it("does not hand out the same name twice in a row very often", () => {
     const seen = new Set(Array.from({ length: 500 }, () => generateUsername()));
     expect(seen.size).toBeGreaterThan(480);
+  });
+});
+
+describe("subnetOf IPv6", () => {
+  it("compressed and expanded forms share a /48", async () => {
+    const { subnetOf } = await import("@/lib/server/rateLimit");
+    expect(subnetOf("2001:db8::1")).toBe(subnetOf("2001:db8:0:0:0:0:0:1"));
+    expect(subnetOf("2001:db8:1::1")).toBe("2001:db8:1::/48");
   });
 });

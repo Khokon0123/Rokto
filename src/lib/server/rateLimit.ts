@@ -77,6 +77,13 @@ export function clientIp(req: Request): string {
 /** /24 for IPv4, /48 for IPv6: one household or small network, for coarser daily limits. */
 export function subnetOf(ip: string): string {
   if (ip.includes(".")) return ip.split(".").slice(0, 3).join(".") + ".0/24";
-  if (ip.includes(":")) return ip.split(":").slice(0, 3).join(":") + "::/48";
+  if (ip.includes(":")) {
+    // Expand "::" first, so "2001:db8::1" and "2001:db8:0:0:0:0:0:1" give the same /48.
+    const [head, tail] = ip.split("::");
+    const h = head ? head.split(":") : [];
+    const t = tail ? tail.split(":") : [];
+    const groups = tail === undefined ? h : [...h, ...Array(Math.max(0, 8 - h.length - t.length)).fill("0"), ...t];
+    return groups.slice(0, 3).join(":") + "::/48";
+  }
   return ip;
 }

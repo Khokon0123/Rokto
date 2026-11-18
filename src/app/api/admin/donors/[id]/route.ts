@@ -8,7 +8,7 @@ import { closeReport } from "@/lib/server/reports";
 // block=true also stops that phone number from registering again (L2).
 export function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   return handle(async () => {
-    requireAdmin(req);
+    await requireAdmin(req);
     const { id } = await params;
     if (!id || !/^[A-Za-z0-9]{1,40}$/.test(id)) throw new ApiError(400, "bad_request");
     const body = await readJson(req);

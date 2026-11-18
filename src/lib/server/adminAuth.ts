@@ -2,6 +2,7 @@ import "server-only";
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { ADMIN_SESSION_TTL_SECONDS } from "@/config/app";
 import { isProduction } from "./env";
+import { isAdminUserActive } from "./adminUsers";
 import { ApiError } from "./http";
 
 // One shared admin password (owner decision #6: per-person accounts are the long-term option).
@@ -76,6 +77,13 @@ export function readAdminSession(token: string | undefined): AdminIdentity | nul
 
 export const isValidAdminSession = (token: string | undefined): boolean => readAdminSession(token) !== null;
 
+/** Like readAdminSession, but a person's login must also still exist and be enabled (revokes live sessions). */
+export async function readAdminSessionLive(token: string | undefined): Promise<AdminIdentity | null> {
+  const who = readAdminSession(token);
+  if (who?.email && !(await isAdminUserActive(who.email))) return null;
+  return who;
+}
+
 /** Cookie attributes used for BOTH login and logout, so logout always replaces the right cookie. */
 export function adminCookieOptions(maxAge: number) {
   return { httpOnly: true, secure: isProduction(), sameSite: "strict" as const, path: "/", maxAge };
@@ -88,10 +96,10 @@ export function currentAdmin(req: Request): AdminIdentity | null {
 }
 
 /** Throws 401 if the request's admin cookie is missing, forged, expired or revoked. */
-export function requireAdmin(req: Request): AdminIdentity {
+export async function requireAdmin(req: Request): Promise<AdminIdentity> {
   const cookie = req.headers.get("cookie") ?? "";
   const match = cookie.match(new RegExp(`(?:^|;\\s*)${ADMIN_COOKIE}=([^;]+)`));
-  const who = readAdminSession(match?.[1]);
+  const who = await readAdminSessionLive(match?.[1]);
   if (!who) throw new ApiError(401, "admin_unauthorized");
   return who;
 }

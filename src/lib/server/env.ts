@@ -54,6 +54,10 @@ export function configIssues(): ConfigIssue[] {
       issues.push({ subsystem: "account", problem: `ACCOUNT_SESSION_SECRET must differ from ${other}` });
     }
   }
+  // S8: without a trusted IP header every visitor shares one "unknown" rate-limit bucket.
+  if (!has("VERCEL") && !has("TRUSTED_IP_HEADER")) {
+    issues.push({ subsystem: "site", problem: "set TRUSTED_IP_HEADER (or deploy on Vercel): otherwise all visitors share one rate-limit bucket" });
+  }
   if (!has("TURNSTILE_SECRET_KEY")) issues.push({ subsystem: "captcha", problem: "TURNSTILE_SECRET_KEY is missing" });
   if (!has("NEXT_PUBLIC_TURNSTILE_SITE_KEY")) {
     issues.push({ subsystem: "captcha", problem: "NEXT_PUBLIC_TURNSTILE_SITE_KEY is missing (must be set at build time)" });

@@ -6,7 +6,7 @@ import { closeReport } from "@/lib/server/reports";
 // PATCH /api/admin/reports/:id { dismiss: true } - close a report without action. Admin-only.
 export function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   return handle(async () => {
-    requireAdmin(req);
+    await requireAdmin(req);
     const { id } = await params;
     await readJson(req);
     await closeReport(id, "dismissed");

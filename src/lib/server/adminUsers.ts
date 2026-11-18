@@ -96,6 +96,12 @@ export async function listAdminUsers(): Promise<Array<AdminUser & { createdAt: s
     .sort((a, b) => a.email.localeCompare(b.email));
 }
 
+/** True while this login exists and is not disabled: lets a disabled admin lose a live session. */
+export async function isAdminUserActive(emailInput: string): Promise<boolean> {
+  const snap = await userRef(emailInput).get();
+  return snap.exists && !(snap.data() as AdminUserDoc).disabled;
+}
+
 /** Turns a login off without deleting it, so the audit trail keeps pointing at a real person. */
 export async function setAdminUserDisabled(emailInput: string, disabled: boolean): Promise<void> {
   const ref = userRef(emailInput);

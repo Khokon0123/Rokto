@@ -31,9 +31,9 @@ type FieldErrors = Partial<
   Record<"name" | "phone" | "bloodGroup" | "area" | "lastDonated" | "consent", string>
 >;
 
-/** Only our own paths: a `next` of "//evil.com" must never become a redirect. */
+/** Only our own paths: a `next` of "//evil.com" or "/\\evil.com" must never become a redirect. */
 function safeNext(raw: string | null): string {
-  return raw && raw.startsWith("/") && !raw.startsWith("//") ? raw : "/search";
+  return raw && /^\/(?![\/\\])/.test(raw) && !/[\u0000-\u001f]/.test(raw) ? raw : "/search";
 }
 
 export default function RegisterClient() {

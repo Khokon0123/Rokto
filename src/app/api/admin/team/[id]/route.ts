@@ -9,7 +9,7 @@ type Ctx = { params: Promise<{ id: string }> };
 // PATCH /api/admin/team/:id - either { move: "up" | "down" } or the full edited form. Admin-only.
 export function PATCH(req: Request, { params }: Ctx) {
   return handle(async () => {
-    requireAdmin(req);
+    await requireAdmin(req);
     const { id } = await params;
     if (!id) throw new ApiError(400, "bad_request");
     const body = await readJson(req, TEAM_BODY_LIMIT);
@@ -29,7 +29,7 @@ export function PATCH(req: Request, { params }: Ctx) {
 // DELETE /api/admin/team/:id - remove from /team. Admin-only.
 export function DELETE(req: Request, { params }: Ctx) {
   return handle(async () => {
-    requireAdmin(req);
+    await requireAdmin(req);
     const { id } = await params;
     if (!id) throw new ApiError(400, "bad_request");
     await readJson(req);

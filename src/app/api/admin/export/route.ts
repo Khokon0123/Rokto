@@ -13,7 +13,7 @@ const csvCell = (v: unknown) => {
 // GET /api/admin/export?format=json|csv - full donor backup for the weekly routine (H4). Admin-only.
 export function GET(req: Request) {
   return handle(async () => {
-    requireAdmin(req);
+    await requireAdmin(req);
     const format = new URL(req.url).searchParams.get("format") === "csv" ? "csv" : "json";
     const donors = await exportAllDonors();
     await writeAudit("donor_export", format, req, { count: donors.length });

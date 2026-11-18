@@ -5,7 +5,7 @@ import { handle, json } from "@/lib/server/http";
 // GET /api/admin/donors?group=&area=&phone=&cursor= - one page, newest first (H7). Admin-only.
 export function GET(req: Request) {
   return handle(async () => {
-    requireAdmin(req);
+    await requireAdmin(req);
     const q = new URL(req.url).searchParams;
     return json(
       await listDonorsPage({
