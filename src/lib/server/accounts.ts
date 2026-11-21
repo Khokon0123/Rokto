@@ -99,6 +99,30 @@ export async function loadAccount(accountId: string): Promise<Account | null> {
   return { id: snap.id, username: data.username, suspended: !!data.suspended };
 }
 
+/** The account holding this (already normalised) username, or null. */
+export async function accountByUsername(username: string): Promise<Account | null> {
+  const claim = await adminDb().collection(COL.usernames).doc(username).get();
+  const id = claim.data()?.accountId as string | undefined;
+  return id ? loadAccount(id) : null;
+}
+
+/** Claims `username` for the account and releases its old one, atomically. 409 if someone has it. */
+export async function renameAccount(accountId: string, username: string): Promise<void> {
+  const db = adminDb();
+  await db.runTransaction(async (tx) => {
+    const ref = db.collection(COL.accounts).doc(accountId);
+    const nameRef = db.collection(COL.usernames).doc(username);
+    const [acct, taken] = await Promise.all([tx.get(ref), tx.get(nameRef)]);
+    if (!acct.exists) throw new ApiError(401, "account_required");
+    const old = (acct.data() as AccountDoc).username;
+    if (old === username) return;
+    if (taken.exists && taken.data()?.accountId !== accountId) throw new ApiError(409, "username_taken");
+    tx.set(nameRef, { accountId, at: FieldValue.serverTimestamp() });
+    tx.delete(db.collection(COL.usernames).doc(old));
+    tx.update(ref, { username });
+  });
+}
+
 export interface AccountDetail extends Account {
   phone: string;
   createdAt: Date | null;

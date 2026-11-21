@@ -8,6 +8,7 @@ import { checkRevealPass, issueRevealPass } from "@/lib/server/revealPass";
 import { budgetFor, dailyCap } from "@/lib/server/otp";
 import { readAccountSession, signAccountSession } from "@/lib/server/accountAuth";
 import { generateUsername, isUsername } from "@/lib/server/username";
+import { normalizeUsername } from "@/lib/username";
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -187,6 +188,14 @@ describe("usernames", () => {
     for (let i = 0; i < 200; i++) expect(isUsername(generateUsername())).toBe(true);
     for (const bad of ["", "one-two", "ONE-TWO-123", "one-two-12", "one-two-012", "one two 123", 7, null]) {
       expect(isUsername(bad)).toBe(false);
+    }
+  });
+
+  it("custom names: trimmed and lower-cased, bad shapes and reserved words refused", () => {
+    expect(normalizeUsername("  Rahim_01 ")).toBe("rahim_01");
+    expect(normalizeUsername("shanto-alo-4721")).toBe("shanto-alo-4721");
+    for (const bad of ["", "ab", "1abc", "has space", "a".repeat(25), "bad!", "Admin", "rokto", 7, null]) {
+      expect(normalizeUsername(bad)).toBeNull();
     }
   });
 

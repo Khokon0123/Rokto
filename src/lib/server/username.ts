@@ -6,7 +6,7 @@ import { randomInt } from "node:crypto";
 // the phone, long enough that nobody lands on someone else's by accident.
 //
 // This is a LABEL, not a secret. The session cookie is what proves who you are, so the word lists
-// are deliberately small and friendly rather than high-entropy. 48 x 48 x 900 = ~2.07M.
+// are deliberately small and friendly rather than high-entropy. 48 x 48 x 9000 = ~20.7M (a million accounts still collide rarely; ensureAccount retries).
 
 const FIRST = [
   "shanto", "sundor", "sahosi", "sotto", "sobuj", "surjo", "sagor", "shital",
@@ -26,12 +26,12 @@ const SECOND = [
   "shapla", "shiuli", "sheuli", "sraboni", "basanta", "bokul", "bela", "binni",
 ] as const;
 
-/** `word-word-NNN`, e.g. `shanto-alo-472`. Never derived from the phone number. */
+/** `word-word-NNNN`, e.g. `shanto-alo-4721`. Never derived from the phone number. */
 export function generateUsername(): string {
-  return `${FIRST[randomInt(FIRST.length)]}-${SECOND[randomInt(SECOND.length)]}-${randomInt(100, 1000)}`;
+  return `${FIRST[randomInt(FIRST.length)]}-${SECOND[randomInt(SECOND.length)]}-${randomInt(1000, 10000)}`;
 }
 
 /** Shape check for anything that claims to be a username (admin search, URLs). */
 export function isUsername(value: unknown): value is string {
-  return typeof value === "string" && /^[a-z]{2,16}-[a-z]{2,16}-[1-9][0-9]{2}$/.test(value);
+  return typeof value === "string" && /^[a-z]{2,16}-[a-z]{2,16}-[1-9][0-9]{2,3}$/.test(value);
 }

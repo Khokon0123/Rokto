@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 const { adminDb } = await import("@/lib/firebase/admin");
-const { signInAccount, loadAccount, accountIdForPhone } = await import("@/lib/server/accounts");
+const { signInAccount, loadAccount, accountIdForPhone, accountByUsername, renameAccount } = await import("@/lib/server/accounts");
 const { COL, phoneKey } = await import("@/lib/server/keys");
 
 const PHONE = "+8801712345678";
@@ -70,5 +70,38 @@ describe("account accounts", () => {
 
   it("accountIdForPhone is null for a number nobody has used", async () => {
     expect(await accountIdForPhone("+8801999999999")).toBeNull();
+  });
+});
+
+describe("usernames as the sign-in key", () => {
+  it("finds the account by its username, and null for an unknown one", async () => {
+    const a = await signInAccount(proof("+8801711111111"));
+    expect((await accountByUsername(a.username))?.id).toBe(a.id);
+    expect(await accountByUsername("nobody-here-0000")).toBeNull();
+  });
+
+  it("rename moves the claim: new name finds the account, old name is released", async () => {
+    const a = await signInAccount(proof("+8801722222222"));
+    await renameAccount(a.id, "my-new-name");
+    expect((await accountByUsername("my-new-name"))?.id).toBe(a.id);
+    expect(await accountByUsername(a.username)).toBeNull();
+    expect((await loadAccount(a.id))?.username).toBe("my-new-name");
+  });
+
+  it("a name someone else holds is refused and nothing changes", async () => {
+    const a = await signInAccount(proof("+8801733333333"));
+    const b = await signInAccount(proof("+8801744444444"));
+    await expect(renameAccount(b.id, a.username)).rejects.toMatchObject({ status: 409, code: "username_taken" });
+    expect((await loadAccount(b.id))?.username).toBe(b.username);
+    expect((await accountByUsername(a.username))?.id).toBe(a.id);
+  });
+
+  it("two accounts racing for one name: exactly one wins", async () => {
+    const a = await signInAccount(proof("+8801755555555"));
+    const b = await signInAccount(proof("+8801766666666"));
+    const out = await Promise.allSettled([renameAccount(a.id, "race-name"), renameAccount(b.id, "race-name")]);
+    expect(out.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+    const holder = await accountByUsername("race-name");
+    expect([a.id, b.id]).toContain(holder?.id);
   });
 });

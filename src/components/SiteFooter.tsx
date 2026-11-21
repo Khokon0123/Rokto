@@ -94,8 +94,8 @@ export default function SiteFooter({ signedIn = false }: { signedIn?: boolean })
       >
         {/* Only for people who are not signed in: offering "Sign in" to someone who already is
             reads as a bug, and it was one. */}
-        {!signedIn && pathname !== "/register" && pathname !== "/account" && (
-          <Link href="/register" className="inline-flex min-h-11 items-center underline focus-visible:outline-white">
+        {!signedIn && pathname !== "/search" && pathname !== "/register" && pathname !== "/account" && (
+          <Link href="/search" className="inline-flex min-h-11 items-center underline focus-visible:outline-white">
             {t.account.signIn}
           </Link>
         )}

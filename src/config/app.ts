@@ -140,6 +140,13 @@ export const ACCOUNT_SESSION_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
 /** Tries before giving up on finding a free username (collisions are vanishingly rare). */
 export const ACCOUNT_USERNAME_TRIES = 8;
 
+/** Username sign-in: failed guesses allowed per IP per window. A username is a lookup key, so the
+ *  guess rate is what stands between it and enumeration. */
+export const ACCOUNT_LOGIN_MAX_FAILS = 10;
+export const ACCOUNT_LOGIN_WINDOW_SECONDS = 900;
+/** Username changes per account per day (stops name-squatting churn). */
+export const ACCOUNT_RENAMES_PER_DAY = 5;
+
 /** How long an admin login session lasts before needing the password again (S7). */
 export const ADMIN_SESSION_TTL_SECONDS = 60 * 60 * 12; // 12 hours
 

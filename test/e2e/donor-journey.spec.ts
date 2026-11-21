@@ -99,16 +99,48 @@ test("security headers are set (S9)", async ({ request }) => {
   expect(res.headers()["x-powered-by"]).toBeUndefined();
 });
 
-test("signed out, searching asks you to join first", async ({ page }) => {
-  // The gate is on the page, not on the homepage button, so a typed URL hits it too - and the
-  // filters survive the round trip.
+test("signed out, searching asks for a username; no username -> register", async ({ page }) => {
+  // The gate is on the page, so a typed URL hits it too. No phone field here any more.
   await page.goto("/search?group=O-");
+  await expect(page).toHaveURL(/\/search\?group=O-/);
+  await expect(page.getByLabel("Your username")).toBeVisible();
+  await expect(page.getByLabel(/^Phone number/)).toHaveCount(0);
+
+  // Unknown username is refused.
+  await page.getByLabel("Your username").fill("nobody-here-0000");
+  await page.getByRole("button", { name: "Find donors" }).click();
+  await expect(page.getByText("No account has that username.")).toBeVisible();
+
+  // No username yet -> register, which still carries the search.
+  await page.getByRole("link", { name: /Get a username/ }).click();
   await expect(page).toHaveURL(/\/register\?next=/);
   await expect(page.getByLabel(/^Phone number/)).toBeVisible();
-
-  // Someone who only wants to find blood is not asked to list themselves as a donor.
   await expect(page.getByLabel(/^Blood group/)).toHaveCount(0);
 
   await signIn(page, "+8801812345678", "01812345678");
   await expect(page).toHaveURL(/group=O-/);
+});
+
+test("the issued username signs you back in, and can be changed", async ({ page }) => {
+  await page.goto("/register");
+  await page.getByLabel(/^Phone number/).fill("01912345678");
+  await page.getByRole("button", { name: "Send verification code" }).click();
+  await verify(page, "+8801912345678");
+  const issued = (await page.getByText(/^[a-z]+-[a-z]+-\d{4}$/).textContent())!.trim();
+
+  // Change it on the account page.
+  await page.goto("/account");
+  await page.getByLabel("Change username").fill("my-e2e-name");
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByText("Username changed.")).toBeVisible();
+
+  // Sign out, then back in by username (the old one is gone, the new one works).
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await page.goto("/search");
+  await page.getByLabel("Your username").fill(issued);
+  await page.getByRole("button", { name: "Find donors" }).click();
+  await expect(page.getByText("No account has that username.")).toBeVisible();
+  await page.getByLabel("Your username").fill("my-e2e-name");
+  await page.getByRole("button", { name: "Find donors" }).click();
+  await expect(page.getByRole("button", { name: "O-", exact: true })).toBeVisible();
 });
