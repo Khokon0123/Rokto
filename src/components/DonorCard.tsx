@@ -6,6 +6,7 @@ import { areaLabel } from "@/lib/areas";
 import { formatDate } from "@/lib/donation";
 import { formatDistanceKm } from "@/lib/geo";
 import type { SearchResult } from "@/lib/search";
+import Avatar from "./Avatar";
 import BloodBadge from "./BloodBadge";
 import CallButton from "./CallButton";
 import ReportListing from "./ReportListing";
@@ -29,7 +30,10 @@ export default function DonorCard({ result, stale = false }: { result: SearchRes
       <div className="flex flex-wrap items-center gap-3">
         <BloodBadge group={donor.bloodGroup} />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-base font-bold text-ink">{donor.name}</p>
+          <p className="flex items-center gap-2 text-base font-bold text-ink">
+            <Avatar id={donor.avatar} size={28} />
+            <span className="truncate">{donor.name}</span>
+          </p>
           <p className="truncate text-sm text-ink">
             {areaLabel(donor.area, locale)}
             {typeof distanceKm === "number" && Number.isFinite(distanceKm) && (

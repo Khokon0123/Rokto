@@ -42,6 +42,7 @@ export interface DirectoryLike {
   area: string;
   lastDonated: string | null;
   location: GeoPoint | null;
+  avatar?: string | null;
   phone?: string;
 }
 
@@ -88,6 +89,7 @@ export function selectResults(
         available: true,
         lastDonated,
         location: isValidGeoPoint(e.location) ? e.location : null,
+        avatar: e.avatar ?? null,
       },
       coolingDown: isCoolingDown(lastDonated, now),
       exact: !params.bloodGroup || e.bloodGroup === params.bloodGroup,

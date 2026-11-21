@@ -388,7 +388,7 @@ export default function SearchClient() {
               <span className="mt-0.5 block text-sm text-muted">{t.home.choice.registerBody}</span>
             </span>
             <Link
-              href="/register"
+              href="/register?donor=1"
               className="inline-flex min-h-11 shrink-0 items-center rounded-xl bg-accent px-4 text-sm font-bold text-white hover:bg-accent-dark"
             >
               {t.home.choice.registerCta}

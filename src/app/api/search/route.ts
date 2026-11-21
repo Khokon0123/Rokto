@@ -23,6 +23,7 @@ export function GET(req: Request) {
         name: donor.name,
         bloodGroup: donor.bloodGroup,
         area: donor.area,
+        avatar: donor.avatar ?? null,
         lastDonated: donor.lastDonated ? donor.lastDonated.toISOString().slice(0, 10) : null,
         // "public" mode (owner decision #1): phones ride along, still never more than one page.
         phone: PHONE_REVEAL_MODE === "public" ? donor.phone : "",

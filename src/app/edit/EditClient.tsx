@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import AreaAutocomplete from "@/components/AreaAutocomplete";
+import AvatarPicker from "@/components/AvatarPicker";
 import type { VerifiedPhone } from "@/lib/usePhoneOtp";
 import BloodBadge from "@/components/BloodBadge";
 import LocationField from "@/components/LocationField";
@@ -20,7 +21,7 @@ import { cleanName, todayIso } from "@/lib/validation";
 
 type Load = "loading" | "invalid" | "failed" | "ready" | "deleted";
 type Save = "idle" | "saving" | "saved";
-type Patch = Partial<Pick<EditableProfile, "available" | "lastDonated" | "area" | "location" | "name" | "bloodGroup">>;
+type Patch = Partial<Pick<EditableProfile, "available" | "lastDonated" | "area" | "location" | "name" | "bloodGroup" | "avatar">>;
 
 type Result<T> = Awaited<ReturnType<typeof apiCall<T>>>;
 
@@ -292,6 +293,8 @@ export default function EditClient({ transport }: { transport: ProfileTransport 
         label={t.edit.area}
         required
       />
+
+      <AvatarPicker value={profile.avatar ?? null} onChange={(avatar) => void saveChange({ avatar })} />
 
       <LocationField value={profile.location} onChange={(location) => void saveChange({ location })} copy={t.edit.location} />
 

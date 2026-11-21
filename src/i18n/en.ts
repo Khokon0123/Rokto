@@ -117,6 +117,11 @@ export const en = {
     facebook: "Facebook",
   },
 
+  avatar: {
+    label: "Avatar (optional)",
+    hint: "Shown next to your name in search. It is a picture to pick, not a photo of you.",
+    option: "Avatar {n}",
+  },
   card: {
     showNumber: "Show phone number",
     revealing: "Getting the number...",

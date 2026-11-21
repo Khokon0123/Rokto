@@ -1,4 +1,5 @@
 import { isValidAreaId } from "@/lib/areas";
+import { isAvatarId } from "@/lib/avatars";
 import { isBloodGroup } from "@/lib/bloodGroups";
 import { isValidGeoPoint, type GeoPoint } from "@/lib/geo";
 import { cleanName, parseDateOnly } from "@/lib/validation";
@@ -31,6 +32,8 @@ export function POST(req: Request) {
       location = body.location;
     }
 
+    if (body.avatar !== null && body.avatar !== undefined && !isAvatarId(body.avatar)) throw new ApiError(400, "bad_request");
+
     const result = await registerDonor(body.proof, {
       name,
       bloodGroup: body.bloodGroup,
@@ -38,6 +41,7 @@ export function POST(req: Request) {
       available: body.available,
       lastDonated,
       location,
+      avatar: (body.avatar as string | null | undefined) ?? null,
     });
     return json(result);
   });

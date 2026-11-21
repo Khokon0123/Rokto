@@ -2,6 +2,7 @@
 import { createHash } from "node:crypto";
 import type { DocumentData, Timestamp } from "firebase-admin/firestore";
 import { isBloodGroup, type BloodGroup } from "@/lib/bloodGroups";
+import { isAvatarId } from "@/lib/avatars";
 import { isValidGeoPoint, type GeoPoint } from "@/lib/geo";
 
 export const DIRECTORY_COLLECTION = "directory";
@@ -13,6 +14,7 @@ export interface DirectoryEntry {
   area: string;
   lastDonated: string | null; // YYYY-MM-DD
   location: GeoPoint | null; // already grid-snapped when written
+  avatar: string | null; // preset avatar id
   phone: string; // leaves the server only in "public" reveal mode
 }
 
@@ -30,6 +32,7 @@ export function toEntry(id: string, d: DocumentData): Omit<DirectoryEntry, "id">
     area: String(d.area ?? ""),
     lastDonated: last && typeof last.toDate === "function" ? last.toDate().toISOString().slice(0, 10) : null,
     location: isValidGeoPoint(d.location) ? d.location : null,
+    avatar: isAvatarId(d.avatar) ? d.avatar : null, // never undefined: Firestore rejects it
     phone: d.phone,
   };
 }

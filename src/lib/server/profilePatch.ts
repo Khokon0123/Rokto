@@ -1,6 +1,7 @@
 import "server-only";
 import { ALLOW_PROFILE_CORRECTIONS } from "@/config/app";
 import { isValidAreaId } from "@/lib/areas";
+import { isAvatarId } from "@/lib/avatars";
 import { isBloodGroup } from "@/lib/bloodGroups";
 import { isValidGeoPoint } from "@/lib/geo";
 import { normalizeBdPhone } from "@/lib/phone";
@@ -31,6 +32,10 @@ export function parsePatch(body: Record<string, unknown>): ProfilePatch {
   if ("location" in body) {
     if (body.location !== null && !isValidGeoPoint(body.location)) throw new ApiError(400, "location_invalid");
     patch.location = body.location as ProfilePatch["location"];
+  }
+  if ("avatar" in body) {
+    if (body.avatar !== null && !isAvatarId(body.avatar)) throw new ApiError(400, "bad_request");
+    patch.avatar = body.avatar as string | null;
   }
   if ("name" in body || "bloodGroup" in body) {
     if (!ALLOW_PROFILE_CORRECTIONS) throw new ApiError(400, "bad_request");

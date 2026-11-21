@@ -73,3 +73,11 @@ describe("E2: areas in Bangla", () => {
     expect(areaLabel("nowhere", "en")).toBe("nowhere");
   });
 });
+
+describe("avatars", () => {
+  it("only preset ids are accepted", async () => {
+    const { isAvatarId } = await import("@/lib/avatars");
+    expect(isAvatarId("heart")).toBe(true);
+    for (const bad of ["", "Heart", "<img>", "photo.jpg", 3, null]) expect(isAvatarId(bad)).toBe(false);
+  });
+});

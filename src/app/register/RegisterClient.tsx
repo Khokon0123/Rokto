@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import AreaAutocomplete from "@/components/AreaAutocomplete";
+import AvatarPicker from "@/components/AvatarPicker";
 import type { VerifiedPhone } from "@/lib/usePhoneOtp";
 import EditLinkCard from "@/components/EditLinkCard";
 import LocationField from "@/components/LocationField";
@@ -50,6 +51,7 @@ export default function RegisterClient() {
   const [bloodGroup, setBloodGroup] = useState("");
   const [area, setArea] = useState<string | null>(null);
   const [location, setLocation] = useState<GeoPoint | null>(null);
+  const [avatar, setAvatar] = useState<string | null>(null);
   const [available, setAvailable] = useState(true); // default ON
   const [lastDonated, setLastDonated] = useState("");
   const [consent, setConsent] = useState(false);
@@ -74,6 +76,7 @@ export default function RegisterClient() {
     bloodGroup,
     area,
     location,
+    avatar,
     available,
     lastDonated: lastDonated || null,
     consent,
@@ -311,6 +314,8 @@ export default function RegisterClient() {
         error={errors.area}
         id="register-area"
       />
+
+      <AvatarPicker value={avatar} onChange={setAvatar} />
 
       <LocationField value={location} onChange={setLocation} copy={t.register.location} />
 
