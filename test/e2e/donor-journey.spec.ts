@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { resetOutbox, signIn, verify, wipeEmulator } from "./helpers";
+import { resetOutbox, verify, wipeEmulator } from "./helpers";
 
 test.beforeEach(async ({ context }) => {
   await wipeEmulator();
@@ -113,12 +113,10 @@ test("signed out, searching asks for a username; no username -> register", async
 
   // No username yet -> register, which still carries the search.
   await page.getByRole("link", { name: /Get a username/ }).click();
-  await expect(page).toHaveURL(/\/register\?next=/);
-  await expect(page.getByLabel(/^Phone number/)).toBeVisible();
-  await expect(page.getByLabel(/^Blood group/)).toHaveCount(0);
-
-  await signIn(page, "+8801812345678", "01812345678");
-  await expect(page).toHaveURL(/group=O-/);
+  // The full register form (donor fields on screen), carrying the search to return to.
+  await expect(page).toHaveURL(/\/register\?donor=1&next=.*group%3DO-/);
+  await expect(page.getByLabel(/^Name/)).toBeVisible();
+  await expect(page.getByLabel(/^Blood group/)).toBeVisible();
 });
 
 test("the issued username signs you back in, and can be changed", async ({ page }) => {
