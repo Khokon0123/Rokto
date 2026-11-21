@@ -10,9 +10,8 @@ test.beforeEach(async ({ context }) => {
 test("register -> edit link -> edit -> search -> recover (old link dies) -> delete", async ({ page }) => {
   const phone = "+8801712345678";
 
-  // Register. ?donor=1 is how the homepage's "Register as a donor" card arrives: the listing box
-  // is already ticked, so the donor fields are on screen.
-  await page.goto("/register?donor=1");
+  // Register: three steps, and everybody goes through all of them.
+  await page.goto("/register");
   await page.getByLabel(/^Name/).fill("Rahim Uddin");
   await page.getByLabel(/^Phone number/).fill("01712345678");
   await page.getByRole("button", { name: "Next" }).click();
@@ -116,14 +115,22 @@ test("signed out, searching asks for a username; no username -> register", async
   // No username yet -> register, which still carries the search.
   await page.getByRole("link", { name: /Get a username/ }).click();
   // The full register form (donor fields on screen), carrying the search to return to.
-  await expect(page).toHaveURL(/\/register\?donor=1&next=.*group%3DO-/);
+  await expect(page).toHaveURL(/\/register\?next=.*group%3DO-/);
   await expect(page.getByText("Step 1 of 3")).toBeVisible();
   await expect(page.getByLabel(/^Name/)).toBeVisible();
 });
 
 test("the issued username signs you back in, and can be changed", async ({ page }) => {
   await page.goto("/register");
+  await page.getByLabel(/^Name/).fill("Karim Ali");
   await page.getByLabel(/^Phone number/).fill("01912345678");
+  await page.getByRole("button", { name: "Next" }).click();
+  await page.getByRole("button", { name: "B+", exact: true }).click();
+  await page.locator("#register-area").fill("Khul");
+  await page.getByRole("option", { name: /Khulshi/ }).click();
+  await page.getByRole("button", { name: "Next" }).click();
+  await page.getByRole("switch", { name: /Show me in the donor list/ }).click(); // opt out of the list
+  await page.locator("#consent").check();
   await page.getByRole("button", { name: "Send verification code" }).click();
   await verify(page, "+8801912345678");
   const issued = (await page.getByText(/^[a-z]+-[a-z]+-\d{4}$/).textContent())!.trim();

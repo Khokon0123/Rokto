@@ -54,7 +54,7 @@ export default function HomeInfo() {
               </span>
               {i === 0 ? (
                 <Link
-                  href="/register?donor=1"
+                  href="/register"
                   className="mt-3 inline-flex min-h-11 items-center text-lg font-bold text-accent underline underline-offset-2"
                 >
                   {item.title}

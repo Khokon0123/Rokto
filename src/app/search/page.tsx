@@ -21,7 +21,7 @@ export default async function SearchPage({
     }
     const q = query.toString();
     // Stay on /search (filters and all): they have a username, or they follow the link to get one.
-    const registerHref = `/register?donor=1&next=${encodeURIComponent(q ? `/search?${q}` : "/search")}`;
+    const registerHref = `/register?next=${encodeURIComponent(q ? `/search?${q}` : "/search")}`;
     return (
       <div className="relative -mt-14">
         <UsernameSignIn registerHref={registerHref} />

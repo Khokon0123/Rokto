@@ -55,8 +55,6 @@ function RegisterFlow() {
   const errorMessage = useErrorMessage();
   const params = useSearchParams();
   const next = safeNext(params.get("next"));
-  // Arriving from "Register as a donor" ticks the box; arriving from a search does not.
-  const [asDonor, setAsDonor] = useState(params.get("donor") === "1");
   const [account, setAccount] = useState<{ username: string; created: boolean } | null>(null);
   const [step, setStep] = useState<Step>("form");
   const [page, setPage] = useState(1); // which of the three form steps is showing
@@ -78,7 +76,7 @@ function RegisterFlow() {
   // same proof (the server accepts an identical retry) instead of texting, and paying for, a new code.
   const [proof, setProof] = useState<{ value: string; phone: string; expiresAt: number } | null>(null);
 
-  const total = asDonor ? 3 : 1;
+  const total = 3;
   // After a step change, focus lands on the first problem field, or else on the step's heading
   // (so a keyboard or screen-reader user starts the new step at its top).
   const pendingFocus = useRef<string | null>(null);
@@ -142,13 +140,11 @@ function RegisterFlow() {
   function problems(): FieldErrors {
     const bad: FieldErrors = {};
     if (!normalizeBdPhone(phoneInput)) bad.phone = t.form.enterPhone;
-    if (asDonor) {
-      if (!cleanName(name)) bad.name = t.form.enterName;
-      if (!isBloodGroup(bloodGroup)) bad.bloodGroup = t.form.chooseBloodGroup;
-      if (!area) bad.area = t.form.chooseArea;
-      if (lastDonated && lastDonated > todayIso()) bad.lastDonated = t.form.dateFuture;
-      if (!consent) bad.consent = t.form.acceptConsent;
-    }
+    if (!cleanName(name)) bad.name = t.form.enterName;
+    if (!isBloodGroup(bloodGroup)) bad.bloodGroup = t.form.chooseBloodGroup;
+    if (!area) bad.area = t.form.chooseArea;
+    if (lastDonated && lastDonated > todayIso()) bad.lastDonated = t.form.dateFuture;
+    if (!consent) bad.consent = t.form.acceptConsent;
     return bad;
   }
 
@@ -171,7 +167,7 @@ function RegisterFlow() {
     }
     const phone = normalizeBdPhone(phoneInput);
     if (!phone) return;
-    if (asDonor && proof && proof.phone === phone && proof.expiresAt > Date.now() + 15_000) {
+    if (proof && proof.phone === phone && proof.expiresAt > Date.now() + 15_000) {
       void save(proof.value); // still verified: no new SMS
       return;
     }
@@ -180,13 +176,9 @@ function RegisterFlow() {
   }
 
   async function onVerified(v: VerifiedPhone) {
-    // Checking the code already opened the account and set the cookie (see /api/otp/verify), so
-    // from here the only question left is whether to also write a donor listing.
+    // Checking the code already opened the account and set the cookie (see /api/otp/verify); what is
+    // left is writing the profile. Whether it shows in searches is the "available" switch.
     if (v.username) setAccount({ username: v.username, created: !!v.created });
-    if (!asDonor) {
-      setStep("done");
-      return;
-    }
     // The server's proof lifetime is 10 minutes; keep a safety margin on this side.
     setProof({ value: v.proof, phone: verifiedPhone ?? "", expiresAt: Date.now() + 9 * 60_000 });
     await save(v.proof);
@@ -216,7 +208,7 @@ function RegisterFlow() {
   }
 
   if (step === "otp" && verifiedPhone) {
-    return <OtpVerification phone={verifiedPhone} purpose={asDonor ? "register" : "signin"} onVerified={onVerified} onCancel={() => setStep("form")} />;
+    return <OtpVerification phone={verifiedPhone} purpose="register" onVerified={onVerified} onCancel={() => setStep("form")} />;
   }
 
   if (step === "saveFailed") {
@@ -240,7 +232,7 @@ function RegisterFlow() {
     return <p className={`${cardClass} text-base text-muted`}>{t.register.saving}</p>;
   }
 
-  const stepTitle = !asDonor ? null : page === 1 ? t.register.stepYou : page === 2 ? t.register.stepBlood : t.register.stepFinish;
+  const stepTitle = page === 1 ? t.register.stepYou : page === 2 ? t.register.stepBlood : t.register.stepFinish;
   const fieldError = (f: Field) =>
     errors[f] && (
       <p id={`${FIELD_IDS[f]}-error`} role="alert" className={errorOnRed}>
@@ -250,24 +242,18 @@ function RegisterFlow() {
 
   return (
     <form onSubmit={onSubmit} noValidate className="space-y-6">
-      {asDonor && (
-        <div>
-          <p className="text-sm font-bold text-white/90">{fmt(t.register.step, { n: page, total })}</p>
-          <div className="mt-2 flex gap-2" aria-hidden="true">
-            {[1, 2, 3].map((i) => (
-              <span key={i} className={`h-1.5 flex-1 rounded-full ${i <= page ? "bg-white" : "bg-white/30"}`} />
-            ))}
-          </div>
+      <div>
+        <p className="text-sm font-bold text-white/90">{fmt(t.register.step, { n: page, total })}</p>
+        <div className="mt-2 flex gap-2" aria-hidden="true">
+          {[1, 2, 3].map((i) => (
+            <span key={i} className={`h-1.5 flex-1 rounded-full ${i <= page ? "bg-white" : "bg-white/30"}`} />
+          ))}
         </div>
-      )}
-      {stepTitle && (
-        <h2 ref={headingRef} tabIndex={-1} className="text-3xl font-extrabold leading-tight text-white focus:outline-none focus-visible:outline-none">
-          {stepTitle}
-        </h2>
-      )}
-      {page === 1 && (
-        <p className="text-base leading-relaxed text-white/90">{asDonor ? t.register.intro : t.register.accountIntro}</p>
-      )}
+      </div>
+      <h2 ref={headingRef} tabIndex={-1} className="text-3xl font-extrabold leading-tight text-white focus:outline-none focus-visible:outline-none">
+        {stepTitle}
+      </h2>
+      {page === 1 && <p className="text-base leading-relaxed text-white/90">{t.register.intro}</p>}
 
       {apiError && (
         <p role="alert" className="rounded-2xl border border-accent bg-accent-soft p-4 font-medium text-accent-deep">
@@ -277,27 +263,25 @@ function RegisterFlow() {
 
       {page === 1 && (
         <>
-          {asDonor && (
-            <div>
-              <label htmlFor="name" className={labelOnRed}>
-                {t.register.name} <span aria-hidden="true">*</span>
-              </label>
-              <input
-                id="name"
-                aria-invalid={errors.name ? true : undefined}
-                aria-describedby={errors.name ? "name-error" : undefined}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={t.register.namePlaceholder}
-                autoComplete="name"
-                maxLength={80}
-                required
-                aria-required="true"
-                className={inputClass}
-              />
-              {fieldError("name")}
-            </div>
-          )}
+          <div>
+            <label htmlFor="name" className={labelOnRed}>
+              {t.register.name} <span aria-hidden="true">*</span>
+            </label>
+            <input
+              id="name"
+              aria-invalid={errors.name ? true : undefined}
+              aria-describedby={errors.name ? "name-error" : undefined}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={t.register.namePlaceholder}
+              autoComplete="name"
+              maxLength={80}
+              required
+              aria-required="true"
+              className={inputClass}
+            />
+            {fieldError("name")}
+          </div>
 
           <div>
             <label htmlFor="phone" className={labelOnRed}>
@@ -317,24 +301,10 @@ function RegisterFlow() {
             <p className="mt-2 text-sm text-white/85">{t.register.phoneHelp}</p>
             {fieldError("phone")}
           </div>
-
-          {/* Everyone gets an account; a donor listing is the default here, and one tap opts out. */}
-          <button
-            type="button"
-            id="asDonor"
-            onClick={() => {
-              setAsDonor(!asDonor);
-              setPage(1);
-              setErrors({});
-            }}
-            className="min-h-11 text-left text-sm font-semibold text-white underline underline-offset-2"
-          >
-            {asDonor ? t.register.onlyUsername : t.register.asDonor}
-          </button>
         </>
       )}
 
-      {asDonor && page === 2 && (
+      {page === 2 && (
         <>
           <div role="group" aria-labelledby="bloodGroup-label" aria-describedby={errors.bloodGroup ? "bloodGroup-error" : undefined}>
             <p id="bloodGroup-label" className={labelOnRed}>
@@ -373,7 +343,7 @@ function RegisterFlow() {
         </>
       )}
 
-      {asDonor && page === 3 && (
+      {page === 3 && (
         <>
           <AvatarPicker value={avatar} onChange={setAvatar} onDark />
 

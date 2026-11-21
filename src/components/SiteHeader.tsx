@@ -93,7 +93,7 @@ export default function SiteHeader({ stats, account }: { stats?: HeroStatsData |
             )}
             {showRegister && (
               <Link
-                href="/register?donor=1"
+                href="/register"
                 className="inline-flex min-h-12 shrink-0 items-center whitespace-nowrap rounded-full border border-white/70 px-4 text-sm font-semibold text-white hover:bg-white/10 focus-visible:outline-white sm:px-5"
               >
                 <span className="sm:hidden">{t.nav.registerShort}</span>

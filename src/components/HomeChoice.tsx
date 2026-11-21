@@ -50,7 +50,7 @@ export default function HomeChoice() {
             ))}
           </ul>
         </div>
-        <Link href="/register?donor=1" className={`${btnSecondary} mt-auto w-full`}>
+        <Link href="/register" className={`${btnSecondary} mt-auto w-full`}>
           {t.home.choice.registerCta}
         </Link>
       </div>

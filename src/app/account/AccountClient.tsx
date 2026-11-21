@@ -128,7 +128,7 @@ export default function AccountClient({
         <section className={`${cardClass} space-y-3`}>
           <h2 className="text-lg font-bold text-ink">{t.account.notListed}</h2>
           <p className="text-base leading-relaxed text-muted">{fmt(t.account.notListedBody, { name: username })}</p>
-          <Link href="/register?donor=1" className={`${btnPrimary} w-full`}>
+          <Link href="/register" className={`${btnPrimary} w-full`}>
             {t.nav.register}
           </Link>
         </section>
