@@ -27,6 +27,12 @@ html {
   color-scheme: light;
 }
 
+/* A page that renders <div data-red-page> paints the whole page red, so a form can sit straight on
+   the same red as the header and footer instead of in a white card. */
+body:has([data-red-page]) {
+  background: var(--color-accent-dark);
+}
+
 body {
   background: var(--color-page);
   color: var(--color-ink);

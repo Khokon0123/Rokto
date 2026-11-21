@@ -15,10 +15,12 @@ test("register -> edit link -> edit -> search -> recover (old link dies) -> dele
   await page.goto("/register?donor=1");
   await page.getByLabel(/^Name/).fill("Rahim Uddin");
   await page.getByLabel(/^Phone number/).fill("01712345678");
-  await page.getByLabel(/^Blood group/).selectOption("O-");
+  await page.getByRole("button", { name: "Next" }).click();
+  await page.getByRole("button", { name: "O-", exact: true }).click(); // blood group is a row of chips
   await page.locator("#register-area").fill("Kotw");
   await page.getByRole("option", { name: /Kotwali/ }).click();
-  await page.locator("#consent").check(); // two checkboxes now: list-me-as-a-donor, and consent
+  await page.getByRole("button", { name: "Next" }).click();
+  await page.locator("#consent").check();
   await page.getByRole("button", { name: "Send verification code" }).click();
   await verify(page, phone);
   await expect(page.getByText("You're registered")).toBeVisible();
@@ -115,8 +117,8 @@ test("signed out, searching asks for a username; no username -> register", async
   await page.getByRole("link", { name: /Get a username/ }).click();
   // The full register form (donor fields on screen), carrying the search to return to.
   await expect(page).toHaveURL(/\/register\?donor=1&next=.*group%3DO-/);
+  await expect(page.getByText("Step 1 of 3")).toBeVisible();
   await expect(page.getByLabel(/^Name/)).toBeVisible();
-  await expect(page.getByLabel(/^Blood group/)).toBeVisible();
 });
 
 test("the issued username signs you back in, and can be changed", async ({ page }) => {

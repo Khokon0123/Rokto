@@ -3,7 +3,7 @@
 import { useId, useMemo, useState, type KeyboardEvent } from "react";
 import { useLocale, useT } from "@/components/LocaleProvider";
 import { areaLabel, filterAreas, getArea, type Area, type AreaGroup } from "@/lib/areas";
-import { errorTextClass, inputClass, labelClass } from "./styles";
+import { errorOnRed, errorTextClass, inputClass, labelClass, labelOnRed } from "./styles";
 
 interface Props {
   /** Selected area id, or null. Only ids from the static list can ever be emitted. */
@@ -15,6 +15,8 @@ interface Props {
   error?: string | null;
   /** Fixed id for the text input, so a form can move focus to it after a failed submit (A1). */
   id?: string;
+  /** White label and error pill, for use straight on the red page. */
+  onDark?: boolean;
 }
 
 /**
@@ -22,7 +24,7 @@ interface Props {
  * the donor register / edit forms. Free text is never emitted: search depends on donor profiles
  * and queries holding exactly the same area ids, so typing only filters; you must pick a row.
  */
-export default function AreaAutocomplete({ value, onChange, label, placeholder, required, error, id }: Props) {
+export default function AreaAutocomplete({ value, onChange, label, placeholder, required, error, id, onDark }: Props) {
   const t = useT();
   const { locale } = useLocale();
   const labelOf = (a: Area) => areaLabel(a.id, locale);
@@ -119,9 +121,9 @@ export default function AreaAutocomplete({ value, onChange, label, placeholder, 
 
   return (
     <div className="relative" onBlur={(e) => !e.currentTarget.contains(e.relatedTarget) && closeAndRestore()}>
-      <label htmlFor={inputId} className={labelClass}>
+      <label htmlFor={inputId} className={onDark ? labelOnRed : labelClass}>
         {label}
-        {required && <span className="text-accent"> *</span>}
+        {required && <span className={onDark ? "text-white" : "text-accent"}> *</span>}
       </label>
       <div className="relative">
         <input
@@ -214,7 +216,7 @@ export default function AreaAutocomplete({ value, onChange, label, placeholder, 
       )}
 
       {error && (
-        <p id={`${uid}-error`} className={errorTextClass}>
+        <p id={`${uid}-error`} className={onDark ? errorOnRed : errorTextClass}>
           {error}
         </p>
       )}

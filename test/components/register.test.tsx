@@ -26,11 +26,13 @@ describe("F9: a failed save keeps the verified phone", () => {
     renderEn(<RegisterPage />);
     fireEvent.change(screen.getByLabelText(/^Name/), { target: { value: "Rahim Uddin" } });
     fireEvent.change(screen.getByLabelText(/^Phone number/), { target: { value: "01712345678" } });
-    fireEvent.change(screen.getByLabelText(/^Blood group/), { target: { value: "O+" } });
+    fireEvent.click(screen.getByRole("button", { name: "Next" })); // step 2: blood group is a row of chips
+    fireEvent.click(await screen.findByRole("button", { name: "O+" }));
     const area = document.getElementById("register-area") as HTMLInputElement;
     fireEvent.change(area, { target: { value: "Kotwali" } });
     fireEvent.click(await screen.findByRole("option", { name: /Kotwali/ }));
-    fireEvent.click(document.getElementById("consent")!);
+    fireEvent.click(screen.getByRole("button", { name: "Next" })); // step 3: consent
+    fireEvent.click(await waitFor(() => document.getElementById("consent")!));
     fireEvent.click(screen.getByRole("button", { name: "Send verification code" }));
 
     const code = await screen.findByLabelText("6-digit code");
@@ -46,10 +48,21 @@ describe("F9: a failed save keeps the verified phone", () => {
     expect((calls.find((c) => c.key === "POST /api/otp/send")!.body as { purpose: string }).purpose).toBe("register");
   });
 
+  it("Next on step 2 without a blood group stops there and says so", async () => {
+    vi.stubGlobal("fetch", fakeFetch({}).fn);
+    renderEn(<RegisterPage />);
+    fireEvent.change(screen.getByLabelText(/^Name/), { target: { value: "Rahim Uddin" } });
+    fireEvent.change(screen.getByLabelText(/^Phone number/), { target: { value: "01712345678" } });
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Next" }));
+    expect(await screen.findByText("Choose your blood group.")).toBeTruthy();
+    expect(screen.getByText("Step 2 of 3")).toBeTruthy();
+  });
+
   it("an invalid form moves focus to the first problem (A1)", async () => {
     vi.stubGlobal("fetch", fakeFetch({}).fn);
     renderEn(<RegisterPage />);
-    fireEvent.click(screen.getByRole("button", { name: "Send verification code" }));
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
     await waitFor(() => expect(document.activeElement?.id).toBe("name"));
     expect(screen.getByLabelText(/^Name/)).toHaveAttribute("aria-invalid", "true");
   });
@@ -64,7 +77,7 @@ describe("one page, two jobs", () => {
     vi.stubGlobal("fetch", fn);
     renderEn(<RegisterPage />);
 
-    fireEvent.click(document.getElementById("asDonor")!);
+    fireEvent.click(screen.getByRole("button", { name: "I only need a username, not a donor listing" }));
     // Someone who only wants to find blood is not asked for their blood group, area or consent.
     expect(screen.queryByLabelText(/^Name/)).toBeNull();
     expect(screen.queryByLabelText(/^Blood group/)).toBeNull();
