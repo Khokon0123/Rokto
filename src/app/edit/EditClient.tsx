@@ -17,11 +17,11 @@ import { apiCall } from "@/lib/api";
 import { BLOOD_GROUPS, isBloodGroup, type BloodGroup } from "@/lib/bloodGroups";
 import { formatLocalPhone, normalizeBdPhone } from "@/lib/phone";
 import type { EditableProfile } from "@/lib/types";
-import { cleanName, todayIso } from "@/lib/validation";
+import { cleanName, parseDonationCount, todayIso } from "@/lib/validation";
 
 type Load = "loading" | "invalid" | "failed" | "ready" | "deleted";
 type Save = "idle" | "saving" | "saved";
-type Patch = Partial<Pick<EditableProfile, "available" | "lastDonated" | "area" | "location" | "name" | "bloodGroup" | "avatar">>;
+type Patch = Partial<Pick<EditableProfile, "available" | "lastDonated" | "area" | "location" | "name" | "bloodGroup" | "avatar" | "donationCount">>;
 
 type Result<T> = Awaited<ReturnType<typeof apiCall<T>>>;
 
@@ -77,6 +77,7 @@ export default function EditClient({ transport }: { transport: ProfileTransport 
   const [error, setError] = useState<string | null>(null);
   const [dateDraft, setDateDraft] = useState("");
   const [nameDraft, setNameDraft] = useState("");
+  const [countDraft, setCountDraft] = useState("");
   const [groupDraft, setGroupDraft] = useState<BloodGroup | null>(null);
 
   const [phoneMode, setPhoneMode] = useState<"closed" | "input" | "otp">("closed");
@@ -91,6 +92,7 @@ export default function EditClient({ transport }: { transport: ProfileTransport 
     setProfile(p);
     setDateDraft(p.lastDonated ?? "");
     setNameDraft(p.name);
+    setCountDraft(p.donationCount == null ? "" : String(p.donationCount));
   }, []);
 
   useEffect(() => {
@@ -148,6 +150,13 @@ export default function EditClient({ transport }: { transport: ProfileTransport 
       return;
     }
     void saveChange({ lastDonated: value });
+  }
+
+  function saveCount(e: FormEvent) {
+    e.preventDefault();
+    const count = parseDonationCount(countDraft.trim());
+    if (count === undefined) return setError("count_invalid");
+    if (count !== (profile?.donationCount ?? null)) void saveChange({ donationCount: count });
   }
 
   function saveName(e: FormEvent) {
@@ -281,6 +290,31 @@ export default function EditClient({ transport }: { transport: ProfileTransport 
           />
           <button type="submit" className={`${btnSecondary} shrink-0 px-4`} disabled={dateDraft === (profile.lastDonated ?? "")}>
             {t.edit.saveDate}
+          </button>
+        </div>
+      </form>
+
+      <form onSubmit={saveCount} className="space-y-2">
+        <label htmlFor="donationCount" className={labelClass}>
+          {t.edit.donationCount}
+        </label>
+        <div className="flex gap-2">
+          <input
+            id="donationCount"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={200}
+            value={countDraft}
+            onChange={(ev) => setCountDraft(ev.target.value)}
+            className={inputClass}
+          />
+          <button
+            type="submit"
+            className={`${btnSecondary} shrink-0 px-4`}
+            disabled={countDraft.trim() === (profile.donationCount == null ? "" : String(profile.donationCount))}
+          >
+            {t.edit.saveCount}
           </button>
         </div>
       </form>

@@ -26,6 +26,7 @@ export interface DonorFields {
   /** Shape/bounds-validated by the caller; snapped to the grid here, right before it's written. */
   location: GeoPoint | null;
   avatar?: string | null;
+  donationCount?: number | null;
 }
 
 const ts = (d: Date | null) => (d ? Timestamp.fromDate(d) : null);
@@ -63,6 +64,7 @@ export async function registerDonor(proofInput: unknown, fields: DonorFields): P
       lastDonated: ts(fields.lastDonated),
       location: publicPoint(fields.location),
       avatar: fields.avatar ?? null,
+      donationCount: fields.donationCount ?? null,
       consentAt: now,
       updatedAt: now,
     };
@@ -150,6 +152,7 @@ export interface ProfilePatch {
   location?: GeoPoint | null;
   name?: string;
   avatar?: string | null;
+  donationCount?: number | null;
   bloodGroup?: BloodGroup;
   /** New phone: needs a fresh change_phone proof for exactly that number. */
   phone?: { phone: string; proof: unknown };
@@ -168,6 +171,7 @@ export async function updateProfile(owner: Owner, patch: ProfilePatch): Promise<
     if (patch.location !== undefined) updates.location = publicPoint(patch.location);
     if (patch.name !== undefined) updates.name = patch.name;
     if (patch.avatar !== undefined) updates.avatar = patch.avatar;
+    if (patch.donationCount !== undefined) updates.donationCount = patch.donationCount;
     if (patch.bloodGroup !== undefined) updates.bloodGroup = patch.bloodGroup;
 
     let phoneWrites: (() => void) | null = null;
@@ -272,5 +276,6 @@ export function toEditable(data: DocumentData): EditableProfile {
     lastDonated: last && typeof last.toDate === "function" ? last.toDate().toISOString().slice(0, 10) : null,
     location: location ?? null,
     avatar: typeof data.avatar === "string" ? data.avatar : null,
+    donationCount: typeof data.donationCount === "number" ? data.donationCount : null,
   };
 }

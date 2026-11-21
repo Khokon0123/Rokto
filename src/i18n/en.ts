@@ -145,6 +145,7 @@ export const en = {
     chooseArea: "Choose an area from the list.",
     acceptConsent: "Please confirm to continue.",
     dateFuture: "The date can't be in the future.",
+    enterCount: "Enter a whole number from 0 to 200, or leave it empty.",
     cancel: "Cancel",
   },
   register: {
@@ -175,6 +176,8 @@ export const en = {
     available: "Show me in the donor list",
     availableHint: "Turn this off to register without appearing in searches. You keep your username, and can switch it back on any time from your private link.",
     lastDonated: "Last donated (optional)",
+    donationCount: "How many times have you donated blood? (optional)",
+    donationCountHint: "Your best guess is fine. Only you and the Rokto team see this; it is not shown in search.",
     consent:
       "I agree that my name, blood group, area, last donation date and (if I add it) approximate location will be shown publicly, and that my phone number will be shown to people who tap to call me. Anyone who sees this could copy it. I am 18 or older.",
     submit: "Send verification code",
@@ -254,6 +257,8 @@ export const en = {
     loadFailed: "Couldn't load your profile. Your link is probably fine: check your connection and try again.",
     retry: "Try again",
     saveDate: "Save date",
+    donationCount: "Times you have donated blood",
+    saveCount: "Save",
     saveName: "Save name",
     changeBloodGroup: "Change blood group",
     bloodGroupConfirm: "Change your blood group to {group}? Only do this if the old one was a mistake. People searching for {group} will see you.",
@@ -453,6 +458,7 @@ export const en = {
     team_email_invalid: "That email address doesn't look right.",
     team_facebook_invalid: "Paste a full Facebook link, like https://www.facebook.com/yourname",
     generic: "Something went wrong. Please try again.",
+    count_invalid: "Enter a whole number from 0 to 200, or leave it empty.",
     username_not_found: "No account has that username. Check the spelling, or register to get one.",
     username_taken: "Someone already has that username. Try another.",
     username_invalid: "Use 3 to 24 lowercase letters, numbers, - or _, starting with a letter.",

@@ -21,3 +21,12 @@ export function parseDateOnly(v: unknown): Date | null {
 
 export { todayIso } from "./dates";
 import { dhakaDate } from "./dates";
+
+export const DONATION_COUNT_MAX = 200;
+
+/** "How many times have you donated?": "" / null -> null (not given), 0..200 -> the number, else undefined (invalid). */
+export function parseDonationCount(v: unknown): number | null | undefined {
+  if (v === null || v === undefined || v === "") return null;
+  const n = typeof v === "number" ? v : typeof v === "string" && /^\d{1,3}$/.test(v.trim()) ? Number(v) : NaN;
+  return Number.isInteger(n) && n >= 0 && n <= DONATION_COUNT_MAX ? n : undefined;
+}

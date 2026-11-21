@@ -25,3 +25,15 @@ describe("formatting", () => {
     await expect(getCurrentPosition()).rejects.toThrow("geolocation_unsupported");
   });
 });
+
+describe("donation count", () => {
+  it("empty is 'not given'; 0-200 whole numbers pass; the rest is invalid", async () => {
+    const { parseDonationCount } = await import("@/lib/validation");
+    expect(parseDonationCount("")).toBeNull();
+    expect(parseDonationCount(null)).toBeNull();
+    expect(parseDonationCount("0")).toBe(0);
+    expect(parseDonationCount(" 7 ".trim())).toBe(7);
+    expect(parseDonationCount(200)).toBe(200);
+    for (const bad of ["201", "-1", "2.5", "abc", 1.5, 999, {}, true]) expect(parseDonationCount(bad)).toBeUndefined();
+  });
+});

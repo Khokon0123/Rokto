@@ -5,7 +5,7 @@ import { isAvatarId } from "@/lib/avatars";
 import { isBloodGroup } from "@/lib/bloodGroups";
 import { isValidGeoPoint } from "@/lib/geo";
 import { normalizeBdPhone } from "@/lib/phone";
-import { cleanName, parseDateOnly } from "@/lib/validation";
+import { cleanName, parseDateOnly, parseDonationCount } from "@/lib/validation";
 import type { ProfilePatch } from "./donors";
 import { ApiError } from "./http";
 
@@ -32,6 +32,11 @@ export function parsePatch(body: Record<string, unknown>): ProfilePatch {
   if ("location" in body) {
     if (body.location !== null && !isValidGeoPoint(body.location)) throw new ApiError(400, "location_invalid");
     patch.location = body.location as ProfilePatch["location"];
+  }
+  if ("donationCount" in body) {
+    const count = parseDonationCount(body.donationCount);
+    if (count === undefined) throw new ApiError(400, "count_invalid");
+    patch.donationCount = count;
   }
   if ("avatar" in body) {
     if (body.avatar !== null && !isAvatarId(body.avatar)) throw new ApiError(400, "bad_request");

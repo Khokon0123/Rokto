@@ -17,23 +17,24 @@ import { apiCall } from "@/lib/api";
 import { BLOOD_GROUPS, isBloodGroup } from "@/lib/bloodGroups";
 import type { GeoPoint } from "@/lib/geo";
 import { normalizeBdPhone } from "@/lib/phone";
-import { cleanName, todayIso } from "@/lib/validation";
+import { cleanName, parseDonationCount, todayIso } from "@/lib/validation";
 
 type Step = "form" | "otp" | "saving" | "saveFailed" | "done";
-type Field = "name" | "phone" | "bloodGroup" | "area" | "lastDonated" | "consent";
+type Field = "name" | "phone" | "bloodGroup" | "area" | "lastDonated" | "donationCount" | "consent";
 /** Which step each field lives on (step 1 only, when someone just wants a username). */
-const STEP_OF: Record<Field, number> = { name: 1, phone: 1, bloodGroup: 2, area: 2, lastDonated: 3, consent: 3 };
-const FIELD_ORDER: Field[] = ["name", "phone", "bloodGroup", "area", "lastDonated", "consent"];
+const STEP_OF: Record<Field, number> = { name: 1, phone: 1, bloodGroup: 2, area: 2, lastDonated: 3, donationCount: 3, consent: 3 };
+const FIELD_ORDER: Field[] = ["name", "phone", "bloodGroup", "area", "lastDonated", "donationCount", "consent"];
 const FIELD_IDS: Record<Field, string> = {
   name: "name",
   phone: "phone",
   bloodGroup: "bloodGroup",
   area: "register-area",
   lastDonated: "lastDonated",
+  donationCount: "donationCount",
   consent: "consent",
 };
 type FieldErrors = Partial<
-  Record<"name" | "phone" | "bloodGroup" | "area" | "lastDonated" | "consent", string>
+  Record<Field, string>
 >;
 
 /** Only our own paths: a `next` of "//evil.com" or "/\\evil.com" must never become a redirect. */
@@ -67,6 +68,7 @@ function RegisterFlow() {
   const [avatar, setAvatar] = useState<string | null>(null);
   const [available, setAvailable] = useState(true); // default ON
   const [lastDonated, setLastDonated] = useState("");
+  const [donationCount, setDonationCount] = useState("");
   const [consent, setConsent] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [apiError, setApiError] = useState<string | null>(null);
@@ -106,6 +108,7 @@ function RegisterFlow() {
     avatar,
     available,
     lastDonated: lastDonated || null,
+    donationCount: donationCount.trim() === "" ? null : Number(donationCount),
     consent,
   });
 
@@ -144,6 +147,7 @@ function RegisterFlow() {
     if (!isBloodGroup(bloodGroup)) bad.bloodGroup = t.form.chooseBloodGroup;
     if (!area) bad.area = t.form.chooseArea;
     if (lastDonated && lastDonated > todayIso()) bad.lastDonated = t.form.dateFuture;
+    if (parseDonationCount(donationCount.trim()) === undefined) bad.donationCount = t.form.enterCount;
     if (!consent) bad.consent = t.form.acceptConsent;
     return bad;
   }
@@ -346,6 +350,28 @@ function RegisterFlow() {
       {page === 3 && (
         <>
           <AvatarPicker value={avatar} onChange={setAvatar} onDark />
+
+          <div>
+            <label htmlFor="donationCount" className={labelOnRed}>
+              {t.register.donationCount}
+            </label>
+            <input
+              id="donationCount"
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={200}
+              step={1}
+              value={donationCount}
+              onChange={(e) => setDonationCount(e.target.value)}
+              placeholder="0"
+              aria-invalid={errors.donationCount ? true : undefined}
+              aria-describedby={errors.donationCount ? "donationCount-error" : "donationCount-hint"}
+              className={inputClass}
+            />
+            <p id="donationCount-hint" className="mt-2 text-sm text-white/85">{t.register.donationCountHint}</p>
+            {fieldError("donationCount")}
+          </div>
 
           <Switch checked={available} onChange={setAvailable} label={t.register.available} hint={t.register.availableHint} />
 

@@ -15,6 +15,8 @@ export interface Donor {
   location: GeoPoint | null;
   /** Preset avatar id (see lib/avatars.ts), or none. */
   avatar?: string | null;
+  /** Times they say they have donated blood. Private: stored, never published. */
+  donationCount?: number | null;
 }
 
 /** What the /edit page loads and edits (dates are YYYY-MM-DD strings). */
@@ -27,4 +29,5 @@ export interface EditableProfile {
   lastDonated: string | null;
   location: GeoPoint | null;
   avatar?: string | null;
+  donationCount?: number | null;
 }
