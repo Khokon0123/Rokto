@@ -161,7 +161,6 @@ function RegisterFlow() {
     setErrors(Object.fromEntries(shown.map((f) => [f, all[f]])) as FieldErrors);
     if (shown.length > 0) {
       // A1: take the person straight to the first problem, on whichever step it lives.
-      if (shown[0] === "lastDonated") setMoreOpen(true);
       goTo(STEP_OF[shown[0]], FIELD_IDS[shown[0]]);
       return;
     }
@@ -352,6 +351,23 @@ function RegisterFlow() {
           <AvatarPicker value={avatar} onChange={setAvatar} onDark />
 
           <div>
+            <label htmlFor="lastDonated" className={labelOnRed}>
+              {t.register.lastDonated}
+            </label>
+            <input
+              id="lastDonated"
+              aria-invalid={errors.lastDonated ? true : undefined}
+              aria-describedby={errors.lastDonated ? "lastDonated-error" : undefined}
+              type="date"
+              max={todayIso()}
+              value={lastDonated}
+              onChange={(e) => setLastDonated(e.target.value)}
+              className={inputClass}
+            />
+            {fieldError("lastDonated")}
+          </div>
+
+          <div>
             <label htmlFor="donationCount" className={labelOnRed}>
               {t.register.donationCount}
             </label>
@@ -380,22 +396,6 @@ function RegisterFlow() {
               {t.register.moreOptions}
             </summary>
             <div className="mt-4 space-y-5">
-              <div>
-                <label htmlFor="lastDonated" className={labelOnRed}>
-                  {t.register.lastDonated}
-                </label>
-                <input
-                  id="lastDonated"
-                  aria-invalid={errors.lastDonated ? true : undefined}
-                  aria-describedby={errors.lastDonated ? "lastDonated-error" : undefined}
-                  type="date"
-                  max={todayIso()}
-                  value={lastDonated}
-                  onChange={(e) => setLastDonated(e.target.value)}
-                  className={inputClass}
-                />
-                {fieldError("lastDonated")}
-              </div>
               <LocationField value={location} onChange={setLocation} copy={t.register.location} />
             </div>
           </details>
