@@ -21,6 +21,7 @@ const fields = (name = "Rahim Uddin") => ({
   area: "kotwali",
   available: true,
   lastDonated: null,
+  donationCount: 0,
   location: { lat: 22.3569, lng: 91.7832 },
 });
 const count = async (c: string) => (await adminDb().collection(c).get()).size;

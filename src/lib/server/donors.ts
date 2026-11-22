@@ -26,7 +26,8 @@ export interface DonorFields {
   /** Shape/bounds-validated by the caller; snapped to the grid here, right before it's written. */
   location: GeoPoint | null;
   avatar?: string | null;
-  donationCount?: number | null;
+  /** Required when registering (0 = never donated). */
+  donationCount: number;
 }
 
 const ts = (d: Date | null) => (d ? Timestamp.fromDate(d) : null);
@@ -64,7 +65,7 @@ export async function registerDonor(proofInput: unknown, fields: DonorFields): P
       lastDonated: ts(fields.lastDonated),
       location: publicPoint(fields.location),
       avatar: fields.avatar ?? null,
-      donationCount: fields.donationCount ?? null,
+      donationCount: fields.donationCount,
       consentAt: now,
       updatedAt: now,
     };
@@ -152,7 +153,7 @@ export interface ProfilePatch {
   location?: GeoPoint | null;
   name?: string;
   avatar?: string | null;
-  donationCount?: number | null;
+  donationCount?: number;
   bloodGroup?: BloodGroup;
   /** New phone: needs a fresh change_phone proof for exactly that number. */
   phone?: { phone: string; proof: unknown };

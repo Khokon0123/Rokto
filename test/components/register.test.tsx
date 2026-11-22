@@ -30,7 +30,9 @@ describe("F9: a failed save keeps the verified phone", () => {
     fireEvent.change(area, { target: { value: "Kotwali" } });
     fireEvent.click(await screen.findByRole("option", { name: /Kotwali/ }));
     fireEvent.click(screen.getByRole("button", { name: "Next" })); // step 3: consent
-    fireEvent.click(await waitFor(() => document.getElementById("consent")!));
+    fireEvent.change(await waitFor(() => document.getElementById("lastDonated")!), { target: { value: "2026-01-15" } });
+    fireEvent.change(document.getElementById("donationCount")!, { target: { value: "3" } });
+    fireEvent.click(document.getElementById("consent")!);
     fireEvent.click(screen.getByRole("button", { name: "Send verification code" }));
 
     const code = await screen.findByLabelText("6-digit code");
@@ -63,5 +65,27 @@ describe("F9: a failed save keeps the verified phone", () => {
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
     await waitFor(() => expect(document.activeElement?.id).toBe("name"));
     expect(screen.getByLabelText(/^Name/)).toHaveAttribute("aria-invalid", "true");
+  });
+});
+
+describe("step 3 requires the donation facts", () => {
+  it("without a donation count it stops and says so; ticking 'never donated' counts as 0", async () => {
+    vi.stubGlobal("fetch", fakeFetch({}).fn);
+    renderEn(<RegisterPage />);
+    fireEvent.change(screen.getByLabelText(/^Name/), { target: { value: "Rahim Uddin" } });
+    fireEvent.change(screen.getByLabelText(/^Phone number/), { target: { value: "01712345678" } });
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    fireEvent.click(await screen.findByRole("button", { name: "O+" }));
+    fireEvent.change(document.getElementById("register-area") as HTMLInputElement, { target: { value: "Kotwali" } });
+    fireEvent.click(await screen.findByRole("option", { name: /Kotwali/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+
+    fireEvent.change(await waitFor(() => document.getElementById("lastDonated")!), { target: { value: "2026-01-15" } });
+    fireEvent.click(document.getElementById("consent")!);
+    fireEvent.click(screen.getByRole("button", { name: "Send verification code" }));
+    expect(await screen.findByText(/Enter a whole number from 0 to 200/)).toBeTruthy();
+
+    fireEvent.click(screen.getByLabelText("I haven't donated blood before"));
+    expect(document.getElementById("donationCount")).toHaveValue(0);
   });
 });

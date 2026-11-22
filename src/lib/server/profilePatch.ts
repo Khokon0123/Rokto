@@ -34,8 +34,9 @@ export function parsePatch(body: Record<string, unknown>): ProfilePatch {
     patch.location = body.location as ProfilePatch["location"];
   }
   if ("donationCount" in body) {
+    // Required, so it can be corrected but never cleared.
     const count = parseDonationCount(body.donationCount);
-    if (count === undefined) throw new ApiError(400, "count_invalid");
+    if (count === undefined || count === null) throw new ApiError(400, "count_invalid");
     patch.donationCount = count;
   }
   if ("avatar" in body) {

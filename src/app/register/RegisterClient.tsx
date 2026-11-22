@@ -68,6 +68,7 @@ function RegisterFlow() {
   const [avatar, setAvatar] = useState<string | null>(null);
   const [available, setAvailable] = useState(true); // default ON
   const [lastDonated, setLastDonated] = useState("");
+  const [neverDonated, setNeverDonated] = useState(false);
   const [donationCount, setDonationCount] = useState("");
   const [consent, setConsent] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -107,8 +108,8 @@ function RegisterFlow() {
     location,
     avatar,
     available,
-    lastDonated: lastDonated || null,
-    donationCount: donationCount.trim() === "" ? null : Number(donationCount),
+    lastDonated: neverDonated ? null : lastDonated || null,
+    donationCount: neverDonated ? 0 : Number(donationCount),
     consent,
   });
 
@@ -146,8 +147,11 @@ function RegisterFlow() {
     if (!cleanName(name)) bad.name = t.form.enterName;
     if (!isBloodGroup(bloodGroup)) bad.bloodGroup = t.form.chooseBloodGroup;
     if (!area) bad.area = t.form.chooseArea;
-    if (lastDonated && lastDonated > todayIso()) bad.lastDonated = t.form.dateFuture;
-    if (parseDonationCount(donationCount.trim()) === undefined) bad.donationCount = t.form.enterCount;
+    if (!neverDonated && !lastDonated) bad.lastDonated = t.form.enterLastDonated;
+    else if (!neverDonated && lastDonated > todayIso()) bad.lastDonated = t.form.dateFuture;
+    // "Never donated" means zero times; otherwise a whole number is required.
+    const count = neverDonated ? 0 : parseDonationCount(donationCount.trim());
+    if (count === undefined || count === null) bad.donationCount = t.form.enterCount;
     if (!consent) bad.consent = t.form.acceptConsent;
     return bad;
   }
@@ -352,7 +356,7 @@ function RegisterFlow() {
 
           <div>
             <label htmlFor="lastDonated" className={labelOnRed}>
-              {t.register.lastDonated}
+              {t.register.lastDonated} <span aria-hidden="true">*</span>
             </label>
             <input
               id="lastDonated"
@@ -360,16 +364,26 @@ function RegisterFlow() {
               aria-describedby={errors.lastDonated ? "lastDonated-error" : undefined}
               type="date"
               max={todayIso()}
-              value={lastDonated}
+              value={neverDonated ? "" : lastDonated}
+              disabled={neverDonated}
               onChange={(e) => setLastDonated(e.target.value)}
-              className={inputClass}
+              className={`${inputClass} disabled:opacity-50`}
             />
+            <label className="mt-3 flex min-h-11 cursor-pointer items-center gap-3 text-base font-semibold text-white">
+              <input
+                type="checkbox"
+                checked={neverDonated}
+                onChange={(e) => setNeverDonated(e.target.checked)}
+                className="size-6 shrink-0 accent-white"
+              />
+              {t.register.neverDonated}
+            </label>
             {fieldError("lastDonated")}
           </div>
 
           <div>
             <label htmlFor="donationCount" className={labelOnRed}>
-              {t.register.donationCount}
+              {t.register.donationCount} <span aria-hidden="true">*</span>
             </label>
             <input
               id="donationCount"
@@ -378,12 +392,15 @@ function RegisterFlow() {
               min={0}
               max={200}
               step={1}
-              value={donationCount}
+              required
+              aria-required="true"
+              value={neverDonated ? "0" : donationCount}
+              disabled={neverDonated}
               onChange={(e) => setDonationCount(e.target.value)}
               placeholder="0"
               aria-invalid={errors.donationCount ? true : undefined}
               aria-describedby={errors.donationCount ? "donationCount-error" : "donationCount-hint"}
-              className={inputClass}
+              className={`${inputClass} disabled:opacity-50`}
             />
             <p id="donationCount-hint" className="mt-2 text-sm text-white/85">{t.register.donationCountHint}</p>
             {fieldError("donationCount")}

@@ -155,7 +155,7 @@ export default function EditClient({ transport }: { transport: ProfileTransport 
   function saveCount(e: FormEvent) {
     e.preventDefault();
     const count = parseDonationCount(countDraft.trim());
-    if (count === undefined) return setError("count_invalid");
+    if (count === undefined || count === null) return setError("count_invalid");
     if (count !== (profile?.donationCount ?? null)) void saveChange({ donationCount: count });
   }
 

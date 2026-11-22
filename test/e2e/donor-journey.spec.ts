@@ -19,6 +19,8 @@ test("register -> edit link -> edit -> search -> recover (old link dies) -> dele
   await page.locator("#register-area").fill("Kotw");
   await page.getByRole("option", { name: /Kotwali/ }).click();
   await page.getByRole("button", { name: "Next" }).click();
+  await page.locator("#lastDonated").fill("2026-01-15");
+  await page.locator("#donationCount").fill("3");
   await page.locator("#consent").check();
   await page.getByRole("button", { name: "Send verification code" }).click();
   await verify(page, phone);
@@ -130,6 +132,7 @@ test("the issued username signs you back in, and can be changed", async ({ page 
   await page.getByRole("option", { name: /Khulshi/ }).click();
   await page.getByRole("button", { name: "Next" }).click();
   await page.getByRole("switch", { name: /Show me in the donor list/ }).click(); // opt out of the list
+  await page.getByLabel("I haven't donated blood before").check();
   await page.locator("#consent").check();
   await page.getByRole("button", { name: "Send verification code" }).click();
   await verify(page, "+8801912345678");

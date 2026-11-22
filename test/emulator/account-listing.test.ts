@@ -17,6 +17,7 @@ const fields = {
   area: "kotwali",
   available: true,
   lastDonated: null,
+  donationCount: 0,
   location: { lat: 22.3569, lng: 91.7832 },
 };
 

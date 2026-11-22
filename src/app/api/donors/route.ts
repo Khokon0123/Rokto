@@ -35,7 +35,7 @@ export function POST(req: Request) {
     if (body.avatar !== null && body.avatar !== undefined && !isAvatarId(body.avatar)) throw new ApiError(400, "bad_request");
 
     const donationCount = parseDonationCount(body.donationCount);
-    if (donationCount === undefined) throw new ApiError(400, "count_invalid");
+    if (donationCount === undefined || donationCount === null) throw new ApiError(400, "count_invalid");
 
     const result = await registerDonor(body.proof, {
       name,
