@@ -46,6 +46,9 @@ export const DEFAULT_TEAM = [
   },
 ] as const;
 
+/** Public launch day, shown on /soon. ISO date in Bangladesh time. */
+export const LAUNCH_DATE = "2026-12-01";
+
 /** Blood banks and hospitals Rokto works with, shown on the homepage as a moving strip.
  *  EMPTY ON PURPOSE: the section does not render until a partnership is actually agreed.
  *  Add one like the ORGS above - name, optional url, optional logo under /public/partners/ -

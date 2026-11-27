@@ -244,6 +244,23 @@ export const en = {
     usernameSaved: "Username changed.",
     signIn: "Sign in",
   },
+  soon: {
+    eyebrow: "Launching 1 December",
+    heading: "Rokto opens on 1 December",
+    lede: "A free directory of blood donors in Chattogram. Pick a blood group and an area, and call a donor yourself - no fee, no middleman.",
+    daysLeft: "{days} days to go",
+    today: "Rokto opens today",
+    points: [
+      "Search by blood group and area",
+      "Call the donor directly",
+      "Free for everyone, always",
+    ],
+    donorTitle: "Are you willing to give blood?",
+    donorBody: "Add your name now and you will be there on the first day, when someone searches for your blood group.",
+    donorCta: "Register as a donor",
+    liveNote: "Already listed as a donor? You can search and manage your listing today.",
+    liveCta: "Open Rokto",
+  },
   otp: {
     captchaTimeout: "The security check is taking too long.",
     sending: "Sending code by SMS...",
@@ -440,6 +457,7 @@ export const en = {
     team: "Team",
     privacy: "Privacy notice",
     terms: "Terms of use",
+    soon: "Launching 1 December",
     admin: "Admin",
   },
   badge: {

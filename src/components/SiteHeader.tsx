@@ -30,7 +30,9 @@ export default function SiteHeader({ stats, account }: { stats?: HeroStatsData |
               ? t.hero.signin
               : pathname === "/account"
                 ? t.hero.account
-                : null;
+                : pathname === "/soon"
+                  ? t.soon.heading
+                  : null;
   const isHome = pathname === "/";
   const isRegister = pathname === "/register";
   const showRegister = pathname !== "/register"; // a link to the page you're already on would do nothing
