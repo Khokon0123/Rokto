@@ -1,15 +1,17 @@
 import type { Metadata } from "next";
 import { LAUNCH_DATE } from "@/config/app";
 import { pageMetadata } from "@/lib/server/metadata";
+import { prelaunch } from "@/lib/server/prelaunch";
 import SoonClient from "./SoonClient";
 
 // Refresh hourly so the day count is right without rebuilding; the page has no per-visitor content.
 export const revalidate = 3600;
 
 export async function generateMetadata(): Promise<Metadata> {
-  // Not in the sitemap and noindex: this is a page to hand out in posts before launch, not one
-  // Google should start showing instead of the homepage.
-  return { ...(await pageMetadata("soon")), robots: { index: false, follow: true } };
+  // While pre-launch is on this page IS the site, so let it be indexed. Once the directory is
+  // back on the homepage, noindex it: Google should not keep offering a "coming soon" page.
+  const meta = await pageMetadata("soon");
+  return prelaunch() ? meta : { ...meta, robots: { index: false, follow: true } };
 }
 
 /**
@@ -19,7 +21,9 @@ export async function generateMetadata(): Promise<Metadata> {
  * registrations, so there are donors in the directory on day one.
  */
 export default function SoonPage() {
-  return <SoonClient daysLeft={daysUntilLaunch()} />;
+  // The "already listed, open Rokto" card only makes sense once / is the directory again;
+  // in pre-launch mode that link would bounce straight back here.
+  return <SoonClient daysLeft={daysUntilLaunch()} showLive={!prelaunch()} />;
 }
 
 /**

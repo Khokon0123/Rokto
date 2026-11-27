@@ -7,7 +7,7 @@ import { fmt } from "@/i18n";
 
 // Same shape as /team and /register: the headline sits in the red band (SiteHeader keys off the
 // pathname), so the content starts with a negative margin and rides over the band's bottom edge.
-export default function SoonClient({ daysLeft }: { daysLeft: number }) {
+export default function SoonClient({ daysLeft, showLive }: { daysLeft: number; showLive: boolean }) {
   const t = useT();
 
   return (
@@ -36,13 +36,15 @@ export default function SoonClient({ daysLeft }: { daysLeft: number }) {
         </Link>
       </section>
 
-      {/* Rokto is already live, so don't pretend otherwise: anyone who needs it today gets a door. */}
-      <section className={`${cardClass} space-y-3`}>
-        <p className="text-sm leading-relaxed text-muted">{t.soon.liveNote}</p>
-        <Link href="/" className={`${btnSecondary} w-full`}>
-          {t.soon.liveCta}
-        </Link>
-      </section>
+      {/* Once the homepage is the directory again, anyone who needs blood today gets a door. */}
+      {showLive && (
+        <section className={`${cardClass} space-y-3`}>
+          <p className="text-sm leading-relaxed text-muted">{t.soon.liveNote}</p>
+          <Link href="/" className={`${btnSecondary} w-full`}>
+            {t.soon.liveCta}
+          </Link>
+        </section>
+      )}
     </div>
   );
 }
