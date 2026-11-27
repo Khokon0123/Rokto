@@ -47,14 +47,10 @@ export const DEFAULT_TEAM = [
 ] as const;
 
 /** Blood banks and hospitals Rokto works with, shown on the homepage as a moving strip.
- *  EMPTY ON PURPOSE: the section does not render until there is a real partnership to name.
+ *  EMPTY ON PURPOSE: the section does not render until a partnership is actually agreed.
  *  Add one like the ORGS above - name, optional url, optional logo under /public/partners/ -
  *  and only when the partnership actually exists. A name here is a public claim about them. */
-export const PARTNERS: OrgCredit[] = [
-  { name: "Parkview", url: null },
-  { name: "Alif Hospital", url: null },
-  { name: "Chittagong Blood Bank", url: null },
-];
+export const PARTNERS: OrgCredit[] = [];
 
 /** Donors who gave blood within this many days are listed below ready donors.
  *  PENDING OWNER + MEDICAL DECISION #7 (L3): one interval for everyone today. */
